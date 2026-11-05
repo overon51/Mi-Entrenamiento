@@ -3,7 +3,7 @@
    Network-first para HTML/JS/CSS, cache-first para el resto
 ===================================================== */
 
-const CACHE_NAME = 'entrenamiento-v3';
+const CACHE_NAME = 'entrenamiento-v4';
 const ARCHIVOS = [
     './',
     './index.html',
