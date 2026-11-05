@@ -2,7 +2,7 @@
   "name": "Mi Entrenamiento",
   "short_name": "Entrenamiento",
   "description": "Mi app de rutinas y ejercicios",
-  "start_url": "start_url": "./",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
