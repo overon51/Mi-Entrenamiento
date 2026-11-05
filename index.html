@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Entrenamiento</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#317EFB">
+</head>
+
+<body>
+
+    <header>
+        <h1>MI ENTRENAMIENTO</h1>
+        <p>Tu progreso empieza aquí</p>
+    </header>
+
+    <main>
+        <section class="menu">
+            <button onclick="mostrar('inicio')">Inicio</button>
+            <button onclick="mostrar('ejercicios')">Ejercicios</button>
+            <button onclick="mostrar('rutinas')">Rutinas</button>
+            <button onclick="mostrar('progreso')">Progreso</button>
+            <button onclick="mostrar('cronometro')">Cronómetro</button>
+            <button onclick="mostrar('calendario')">Calendario</button>
+            <button class="boton-correr" onclick="mostrar('correr')">Cardio 🏃</button>
+            <button onclick="mostrar('musica')">Música 🎵</button>
+            <button onclick="mostrar('video')">Vídeos 🎬</button>
+            <button class="boton-ajustes" onclick="mostrar('ajustes')">Ajustes ⚙️</button>
+        </section>
+
+        <section id="contenido">
+            <h2>Bienvenido</h2>
+            <p>Selecciona una sección para comenzar.</p>
+        </section>
+    </main>
+
+    <div id="aviso"></div>
+
+    <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(function() { console.log('Service Worker registrado ✅'); })
+                .catch(function(err) { console.log('Error:', err); });
+        }
+    </script>
+</body>
+</html>
+
