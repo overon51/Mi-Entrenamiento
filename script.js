@@ -159,7 +159,99 @@ function volverAtras() {
 }
 
 function mostrarInicio() {
-    contenido.innerHTML = `<span data-vista="inicio" hidden></span><h2>Inicio</h2><p>¿Qué vamos a entrenar hoy?</p><div class="tarjeta-rutina" onclick="mostrar('rutinas')" style="cursor:pointer;"><h3>Mis rutinas</h3><p>Tienes ${rutinas.length} rutinas creadas.</p></div><div class="tarjeta-rutina" onclick="mostrar('ejercicios')" style="cursor:pointer;"><h3>Biblioteca</h3><p>Tienes ${obtenerEjercicios().length} ejercicios disponibles.</p></div><div class="tarjeta-rutina" onclick="mostrar('calendario')" style="cursor:pointer;"><h3>Entrenamientos</h3><p>Has registrado ${historial.length} entrenamientos y ${carreras.length} carreras.</p></div>`;
+    const uP = obtenerUltimoPeso();
+    
+    contenido.innerHTML = `
+        <span data-vista="inicio" hidden></span>
+        <h2>Inicio</h2>
+        <p>¿Qué vamos a entrenar hoy?</p>
+        
+        <div class="tarjeta-rutina" onclick="mostrar('rutinas')" style="cursor:pointer;">
+            <h3>💪 Mis rutinas</h3>
+            <p>Tienes ${rutinas.length} rutinas creadas.</p>
+        </div>
+
+        <div class="tarjeta-rutina" onclick="mostrar('calendario')" style="cursor:pointer;">
+            <h3>📅 Entrenamientos</h3>
+            <p>Has registrado ${historial.length} entrenamientos y ${carreras.length} carreras.</p>
+        </div>
+
+        <div class="tarjeta-rutina" id="inicioTiempo">
+            <h3>🌤️ El Tiempo</h3>
+            <div id="tiempoInicioContenido"><p>Buscando el tiempo...</p></div>
+        </div>
+
+        <div class="tarjeta-rutina" onclick="mostrar('progreso')" style="cursor:pointer;">
+            <h3>📈 Evolución del peso</h3>
+            ${uP ? `<p>Último registro: ${formatoNum(uP.valor)} kg (${formatearFecha(uP.fecha)})</p>` : "<p>Sin registros de peso aún.</p>"}
+            <div id="graficaInicio" style="margin-top:10px;"></div>
+        </div>
+    `;
+
+    // Pintar la gráfica rápida en el inicio
+    const registrosPeso = medidasCuerpo.filter(r => r.peso).sort((a,b) => a.fecha.localeCompare(b.fecha)).slice(-7);
+    if (registrosPeso.length >= 2) {
+        const max = Math.max(...registrosPeso.map(r => r.peso)) + 2;
+        const min = Math.min(...registrosPeso.map(r => r.peso)) - 2;
+        let polyline = "", circulos = "";
+        registrosPeso.forEach((r, i) => {
+            const x = (i / (registrosPeso.length - 1)) * 100;
+            const y = 100 - ((r.peso - min) / (max - min)) * 100;
+            polyline += `${x},${y} `;
+            circulos += `<circle cx="${x}" cy="${y}" r="2" fill="var(--accent)" />`;
+        });
+        document.getElementById("graficaInicio").innerHTML = `<svg viewBox="0 -5 100 110" style="width:100%; height:80px; overflow:visible;"><polyline points="${polyline}" fill="none" stroke="var(--accent)" stroke-width="2" />${circulos}</svg>`;
+    } else {
+        document.getElementById("graficaInicio").innerHTML = `<p style="font-size:12px; opacity:0.7;">Añade más registros para ver tu evolución.</p>`;
+    }
+
+    // Lógica del tiempo con memoria (caché)
+    const cacheClima = localStorage.getItem("climaCache");
+    const horaClima = localStorage.getItem("climaCacheHora");
+    const contClima = document.getElementById("tiempoInicioContenido");
+    
+    if (cacheClima && horaClima && (Date.now() - parseInt(horaClima)) < 10800000) {
+        contClima.innerHTML = cacheClima; // Usar caché si tiene menos de 3 horas
+    } else {
+        cargarTiempoInicio();
+    }
+}
+
+// Función auxiliar para Inicio
+function cargarTiempoInicio() {
+    const c = document.getElementById("tiempoInicioContenido");
+    if (!c || !navigator.geolocation) return;
+    
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&hourly=temperature_2m,weathercode`)
+        .then(r => r.json())
+        .then(d => {
+            const t = d.current_weather.temperature, v = d.current_weather.windspeed, cod = d.current_weather.weathercode;
+            let i = "🌤️", txt = "Despejado";
+            if ([0, 1].includes(cod)) { i = "☀️"; txt = "Soleado"; } else if ([2, 3].includes(cod)) { i = "☁️"; txt = "Nublado"; } else if (cod >= 50) { i = "🌧️"; txt = "Lluvia"; }
+            
+            const htmlClima = `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-size:40px; line-height:1;">${i}</div>
+                    <h3 style="font-size:28px; margin:5px 0; color:var(--text-main);">${t}°C</h3>
+                    <p style="font-size:12px;">${txt} · Viento: ${v} km/h</p>
+                </div>
+            `;
+            c.innerHTML = htmlClima;
+            localStorage.setItem("climaCache", htmlClima);
+            localStorage.setItem("climaCacheHora", Date.now());
+        }).catch(() => { c.innerHTML = "<p>Error al cargar el tiempo.</p>"; });
+    });
+}
+
+function cargarClimaCache() {
+    const cache = localStorage.getItem("climaCache");
+    const hora = localStorage.getItem("climaCacheHora");
+    // Si hay caché y tiene menos de 3 horas (10800000 ms), lo usamos
+    if (cache && hora && (Date.now() - parseInt(hora)) < 10800000) {
+        return cache;
+    }
+    return null;
 }
 
 /* =====================================================
@@ -637,27 +729,130 @@ function eliminarHistorial(id) { historial = historial.filter(i => i.id !== id);
    TIEMPO
 ===================================================== */
 function mostrarTiempo() {
-    contenido.innerHTML = `<span data-vista="tiempo" hidden></span><h2>El Tiempo 🌤️</h2><button onclick="pedirTiempoActual()" style="width:100%;background:#3B82F6;margin-bottom:15px;min-height:55px;">📍 Consultar mi ubicación</button><div id="resultadoTiempo" style="display:none;"></div>`;
+    contenido.innerHTML = `
+        <span data-vista="tiempo" hidden></span>
+        <h2>El Tiempo 🌤️</h2>
+        <div id="resultadoTiempo"></div>
+        <button onclick="forzarActualizacionTiempo()" class="boton-mini" style="margin-top:20px; width:100%; background:var(--bg-box);">🔄 Forzar actualización</button>
+    `;
+    
+    const cache = localStorage.getItem("climaCache");
+    const hora = localStorage.getItem("climaCacheHora");
+    const c = document.getElementById("resultadoTiempo");
+
+    if (cache) {
+        c.innerHTML = cache;
+        // Si ha pasado más de 2 horas (7200000 ms), actualizamos en segundo plano
+        if (hora && (Date.now() - parseInt(hora)) > 7200000) {
+            actualizarTiempoSilencioso();
+        }
+    } else {
+        c.innerHTML = `<p style="text-align:center;">Buscando el tiempo...</p>`;
+        actualizarTiempoSilencioso();
+    }
 }
-function pedirTiempoActual() {
-    const c = document.getElementById("resultadoTiempo"); if (!navigator.geolocation) { aviso("No hay GPS."); return; }
-    c.style.display = "block"; c.innerHTML = `<p style="text-align:center;">Buscando...</p>`;
+
+function forzarActualizacionTiempo() {
+    const c = document.getElementById("resultadoTiempo");
+    c.innerHTML = `<p style="text-align:center;">Buscando...</p>`;
+    actualizarTiempoSilencioso();
+}
+
+function actualizarTiempoSilencioso() {
+    if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(function(pos) {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&hourly=temperature_2m,weathercode`).then(r => r.json()).then(d => {
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&hourly=temperature_2m,weathercode`)
+        .then(r => r.json())
+        .then(d => {
             const t = d.current_weather.temperature, v = d.current_weather.windspeed, cod = d.current_weather.weathercode;
             let i = "🌤️", txt = "Despejado";
-            if ([0, 1].includes(cod)) { i = "☀️"; txt = "Soleado"; } else if ([2, 3].includes(cod)) { i = "☁️"; txt = "Nublado"; } else if (cod >= 50) { i = "🌧️"; txt = "Lluvia"; }
+            if ([0, 1].includes(cod)) { i = "☀️"; txt = "Soleado"; } 
+            else if ([2, 3].includes(cod)) { i = "☁️"; txt = "Nublado"; } 
+            else if (cod >= 50) { i = "🌧️"; txt = "Lluvia"; }
+
             let horasHTML = ""; const ahora = new Date().getHours();
-            for (let h = ahora; h <= ahora + 12; h++) { if(!d.hourly.time[h]) break; const hs = d.hourly.time[h].split("T")[1]; const th = Math.round(d.hourly.temperature_2m[h]); let ih = "🌤️"; if ([0, 1].includes(d.hourly.weathercode[h])) ih = "☀️"; else if ([2, 3].includes(d.hourly.weathercode[h])) ih = "☁️"; else if (d.hourly.weathercode[h] >= 50) ih = "🌧️"; horasHTML += `<div class="clima-hora"><span>${hs}</span><strong>${ih}</strong><span>${th}°C</span></div>`; }
-            c.innerHTML = `<div class="clima-actual"><div style="font-size:50px;">${i}</div><h3>${t}°C</h3><p style="color:white; opacity:0.9;">${txt} · Viento: ${v} km/h</p></div><h4 style="margin-left:10px;">Próximas horas</h4><div class="clima-horas">${horasHTML}</div>`;
-        }).catch(() => { c.innerHTML = `<p style="text-align:center;color:red;">Error.</p>`; });
-    }, function() { c.innerHTML = `<p style="text-align:center;color:red;">Activa la ubicación.</p>`; });
+            for (let h = ahora; h <= ahora + 12; h++) { 
+                if(!d.hourly.time[h]) break; 
+                const hs = d.hourly.time[h].split("T")[1]; 
+                const th = Math.round(d.hourly.temperature_2m[h]); 
+                let ih = "🌤️"; if ([0, 1].includes(d.hourly.weathercode[h])) ih = "☀️"; else if ([2, 3].includes(d.hourly.weathercode[h])) ih = "☁️"; else if (d.hourly.weathercode[h] >= 50) ih = "🌧️"; 
+                horasHTML += `<div class="clima-hora"><span>${hs}</span><strong>${ih}</strong><span>${th}°C</span></div>`; 
+            }
+
+            const htmlClima = `
+                <div class="clima-actual">
+                    <div style="font-size:50px;">${i}</div>
+                    <h3>${t}°C</h3>
+                    <p style="color:white; opacity:0.9;">${txt} · Viento: ${v} km/h</p>
+                </div>
+                <h4 style="margin-left:10px;">Próximas horas</h4>
+                <div class="clima-horas">${horasHTML}</div>
+            `;
+            
+            const c = document.getElementById("resultadoTiempo");
+            if (c) c.innerHTML = htmlClima;
+            
+            localStorage.setItem("climaCache", htmlClima);
+            localStorage.setItem("climaCacheHora", Date.now());
+        });
+    });
+}
+
+function forzarActualizacionTiempo() {
+    const c = document.getElementById("resultadoTiempo");
+    c.innerHTML = `<p style="text-align:center;">Buscando...</p>`;
+    actualizarTiempoSilencioso();
+}
+
+function actualizarTiempoSilencioso() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&hourly=temperature_2m,weathercode`)
+        .then(r => r.json())
+        .then(d => {
+            const t = d.current_weather.temperature, v = d.current_weather.windspeed, cod = d.current_weather.weathercode;
+            let i = "🌤️", txt = "Despejado";
+            if ([0, 1].includes(cod)) { i = "☀️"; txt = "Soleado"; } 
+            else if ([2, 3].includes(cod)) { i = "☁️"; txt = "Nublado"; } 
+            else if (cod >= 50) { i = "🌧️"; txt = "Lluvia"; }
+
+            let horasHTML = ""; const ahora = new Date().getHours();
+            for (let h = ahora; h <= ahora + 12; h++) { 
+                if(!d.hourly.time[h]) break; 
+                const hs = d.hourly.time[h].split("T")[1]; 
+                const th = Math.round(d.hourly.temperature_2m[h]); 
+                let ih = "🌤️"; if ([0, 1].includes(d.hourly.weathercode[h])) ih = "☀️"; else if ([2, 3].includes(d.hourly.weathercode[h])) ih = "☁️"; else if (d.hourly.weathercode[h] >= 50) ih = "🌧️"; 
+                horasHTML += `<div class="clima-hora"><span>${hs}</span><strong>${ih}</strong><span>${th}°C</span></div>`; 
+            }
+
+            const htmlClima = `
+                <div class="clima-actual">
+                    <div style="font-size:50px;">${i}</div>
+                    <h3>${t}°C</h3>
+                    <p style="color:white; opacity:0.9;">${txt} · Viento: ${v} km/h</p>
+                </div>
+                <h4 style="margin-left:10px;">Próximas horas</h4>
+                <div class="clima-horas">${horasHTML}</div>
+            `;
+            
+            const c = document.getElementById("resultadoTiempo");
+            if (c) c.innerHTML = htmlClima;
+            
+            localStorage.setItem("climaCache", htmlClima);
+            localStorage.setItem("climaCacheHora", Date.now());
+        });
+    });
 }
 
 /* =====================================================
    CARDIO
 ===================================================== */
-const tiposCardio = { correr: { nombre: "Correr", icono: "🏃", gps: true, ritmo: true, met: 9.8 }, caminar: { nombre: "Caminar", icono: "🚶", gps: true, ritmo: true, met: 3.5 }, bicicleta: { nombre: "Bicicleta", icono: "🚴", gps: true, ritmo: false, met: 8.0 }, estatica: { nombre: "Bici estática", icono: "🚲", gps: false, ritmo: false, met: 7 }, eliptica: { nombre: "Elíptica", icono: "🏋️", gps: false, ritmo: false, met: 5 }, natacion: { nombre: "Natación", icono: "🏊", gps: false, ritmo: false, met: 8 } };
+const tiposCardio = { 
+    correr: { nombre: "Correr", icono: "🏃", gps: true, ritmo: true, met: 9.8 }, 
+    caminar: { nombre: "Caminar", icono: "🚶", gps: true, ritmo: true, met: 3.5 }, 
+    bicicleta: { nombre: "Bicicleta", icono: "🚴", gps: true, ritmo: false, met: 8.0 }, 
+    comba: { nombre: "Salto comba", icono: "🪢", gps: false, ritmo: false, met: 11.0 } 
+};
 function tipoDe(c) { return tiposCardio[c.tipo] ? c.tipo : "correr"; }
 function pesoCalorias() { const u = obtenerUltimoPeso(); return u ? u.valor : 70; }
 function calcularCalorias(t, s, d, p) { return Math.round(tiposCardio[t].met * p * (s / 3600)); }
@@ -945,4 +1140,4 @@ function procesarEnlaceCompartido() {
     } else {
         confirmar("Has compartido un enlace. ¿Quieres abrirlo?", () => { abrirEnlace(enlace); });
     }
-       }
+            }
