@@ -2,15 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mi Entrenamiento</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#317EFB">
+    <meta name="theme-color" content="#FF6B6B">
 </head>
 <body>
     <header>
-        <h1>MI ENTRENAMIENTO</h1>
+        <h1>Mi Entrenamiento</h1>
         <p>Tu progreso empieza aquí</p>
     </header>
 
@@ -24,25 +24,34 @@
             <button onclick="mostrar('correr')">Cardio 🏃</button>
             <button onclick="mostrar('calendario')">Calendario</button>
             <button onclick="mostrar('tiempo')">Tiempo 🌤️</button>
-            <button onclick="mostrar('musica')">Música 🎵</button>
+            <button onclick="mostrar('musica')">Música y Podcast 🎵</button>
             <button onclick="mostrar('video')">Vídeos 🎬</button>
-            <button class="boton-ajustes" onclick="mostrar('ajustes')">Ajustes ⚙️</button>
+            <button class="boton-ajustes" onclick="mostrar('ajustes')">⚙️ Ajustes</button>
         </section>
 
-        <section id="contenido">
-            <h2>Bienvenido</h2>
-            <p>Selecciona una sección para comenzar.</p>
-        </section>
+        <section id="contenido"></section>
     </main>
 
     <div id="aviso"></div>
+    
+    <div id="floating-player">
+        <div class="info">
+            <h4 id="player-titulo">Canción</h4>
+            <span id="player-estado">Reproduciendo...</span>
+        </div>
+        <div class="controles">
+            <button onclick="prevSong()">⏮</button>
+            <button onclick="togglePlay()" id="btn-play-pause">⏸</button>
+            <button onclick="nextSong()">⏭</button>
+            <button onclick="cerrarReproductor()" style="background:transparent; color:var(--text-muted); box-shadow:none; font-size:20px; padding:0 10px;">✕</button>
+        </div>
+    </div>
+    <audio id="global-audio"></audio>
 
     <script src="script.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(function() { console.log('Service Worker registrado ✅'); })
-                .catch(function(err) { console.log('Error:', err); });
+            navigator.serviceWorker.register('sw.js').then(() => console.log('SW OK'));
         }
     </script>
 </body>
