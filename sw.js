@@ -1,4 +1,4 @@
-const CACHE_NAME = 'entrenamiento-v9';
+const CACHE_NAME = 'entrenamiento-v10';
 const ARCHIVOS = [
     './',
     './index.html',
