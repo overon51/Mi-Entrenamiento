@@ -8,13 +8,13 @@
   "description": "Tu progreso empieza aquí",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2936/2936886.png",
+      "src": "icono-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2936/2936886.png",
+      "src": "icono-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
