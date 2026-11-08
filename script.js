@@ -171,34 +171,31 @@ let avisoTimeout = null;
 function aviso(t) { const c = document.getElementById("aviso"); if(!c) return; c.textContent = t; c.classList.add("visible"); clearTimeout(avisoTimeout); avisoTimeout = setTimeout(() => c.classList.remove("visible"), 2800); }
 window.alert = (t) => aviso(t);
 
-function confirmar(texto, alAceptar, eventoTarget) {
-    if (eventoTarget) {
-        // Ventana emergente EN LÍNEA (justo debajo del botón)
-        const anterior = document.getElementById("confirm-inline");
-        if (anterior) anterior.remove();
+function confirmar(texto, alAceptar) {
+    // Borramos cualquier ventana que haya abierta antes
+    const anterior = document.getElementById("modal-flotante");
+    if (anterior) anterior.remove();
 
-        const f = document.createElement("div");
-        f.id = "confirm-inline";
-        f.style.cssText = "background:var(--bg-box); padding:12px; border-radius:10px; margin-top:10px; border:1px solid var(--border-color); width:100%;";
-        f.innerHTML = `<p style="margin:0 0 10px 0; color:var(--text-main); font-size:13px; text-align:center;">${escaparHTML(texto)}</p>
-            <div style="display:flex; gap:10px;">
-                <button class="boton-si" style="background:#10B981; color:white; flex:1; padding:8px; font-size:13px; border-radius:8px; border:none;">Sí</button>
-                <button class="boton-no" style="background:#EF4444; color:white; flex:1; padding:8px; font-size:13px; border-radius:8px; border:none;">No</button>
-            </div>`;
-        
-        // Lo insertamos justo después del botón que hemos pulsado
-        eventoTarget.parentNode.insertBefore(f, eventoTarget.nextSibling);
-        
-        f.querySelector(".boton-si").onclick = () => { f.remove(); alAceptar(); };
-        f.querySelector(".boton-no").onclick = () => f.remove();
-    } else {
-        // Ventana emergente FLOTANTE (para acciones sin botón específico, como importar)
-        const f = document.createElement("div"); f.className = "modal-fondo";
-        f.innerHTML = `<div class="modal-caja"><p>${escaparHTML(texto)}</p><div class="modal-botones"><button class="boton-si" style="background:#10B981;">Sí</button><button class="boton-no" style="background:#EF4444;">No</button></div></div>`;
-        document.body.appendChild(f);
-        f.querySelector(".boton-si").onclick = () => { f.remove(); alAceptar(); };
-        f.querySelector(".boton-no").onclick = () => f.remove();
-    }
+    const f = document.createElement("div");
+    f.id = "modal-flotante";
+    // Fondo oscuro que cubre toda la pantalla
+    f.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 20px; box-sizing: border-box;";
+    
+    // La caja central con los botones
+    f.innerHTML = `
+        <div style="background: var(--bg-main); padding: 20px; border-radius: var(--radio); width: 100%; max-width: 320px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid var(--border-color);">
+            <p style="margin: 0 0 20px 0; color: var(--text-main); font-size: 16px; font-weight: bold;">${escaparHTML(texto)}</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="boton-si" style="background:#10B981; color:white; flex:1; padding:12px; font-size:14px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">Sí</button>
+                <button class="boton-no" style="background:#EF4444; color:white; flex:1; padding:12px; font-size:14px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">No</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(f);
+    
+    f.querySelector(".boton-si").onclick = () => { f.remove(); alAceptar(); };
+    f.querySelector(".boton-no").onclick = () => f.remove();
 }
 
 function abrirEnlace(url) { 
@@ -1287,20 +1284,12 @@ function verListaLocal(id, cat) {
             const auds = rq.result.filter(a => a.listaId === id);
             
             const h = auds.length === 0 ? `<p>Lista vacía.</p>` : auds.map(a => `
-                <div class="item-mini" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span style="font-size:14px; font-weight:bold; color:var(--text-main); flex:1; padding-right:10px;">${escaparHTML(a.nombre)}</span>
-                        <div style="display:flex; gap:8px;">
-                            <button onclick="editarNombreAudio('${a.id}', '${id}', '${cat}')" style="background:transparent; border:none; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">✏️</button>
-                            <button onclick="toggleConfirmacionAudio('${a.id}')" style="background:transparent; border:none; color:#EF4444; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">🗑</button>
-                        </div>
-                    </div>
-                    <div id="confirm_audio_${a.id}" style="display:none; width:100%; padding:8px; background:var(--bg-card); border-radius:6px;">
-                        <p style="margin:0 0 5px 0; font-size:11px;">¿Eliminar audio?</p>
-                        <div style="display:flex; gap:5px;">
-                            <button onclick="eliminarAudioDirecto('${a.id}', '${id}', '${cat}')" style="background:#10B981; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">Sí</button>
-                            <button onclick="toggleConfirmacionAudio('${a.id}')" style="background:#EF4444; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">No</button>
-                        </div>
+                <div class="item-mini" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; font-weight:bold; color:var(--text-main); flex:1; padding-right:10px;">${escaparHTML(a.nombre)}</span>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="editarNombreAudio('${a.id}', '${id}', '${cat}')" style="background:transparent; border:none; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">✏️</button>
+                        <!-- La papelera ahora llama directamente a eliminarAudioDirecto -->
+                        <button onclick="eliminarAudioDirecto('${a.id}', '${id}', '${cat}')" style="background:transparent; border:none; color:#EF4444; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">🗑</button>
                     </div>
                 </div>`).join("");
 
@@ -1309,20 +1298,15 @@ function verListaLocal(id, cat) {
                 <h2>${escaparHTML(l.nombre)}</h2>
                 
                 <div class="tarjeta-rutina" style="flex-direction:column; align-items:stretch; gap:15px; margin-bottom:15px; padding:15px;">
-                    
-                    <!-- BOTÓN SUBIR ARCHIVO -->
                     <div>
                         <label style="margin:0; font-size:12px; color:var(--text-muted); font-weight:bold;">Añadir archivo</label>
                         <button onclick="añadirAudiosALista('${id}', '${cat}')" style="background:#10B981; color:white; width:100%; padding:10px; font-size:13px; margin-top:5px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">+ Subir audio</button>
                     </div>
-                    
-                    <!-- PEGAR ENLACE (Diseño arreglado: input arriba, botón abajo) -->
                     <div>
                         <label style="margin:0; font-size:12px; color:var(--text-muted); font-weight:bold;">O pegar enlace (.mp3)</label>
                         <input type="url" id="urlAudio_${id}" placeholder="Pega el enlace aquí..." style="width:100%; box-sizing:border-box; padding:10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); margin-top:5px; margin-bottom:8px; outline:none;">
                         <button onclick="añadirEnlaceAudio('${id}', '${cat}')" style="background:#3B82F6; color:white; width:100%; padding:10px; font-size:13px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">Añadir enlace</button>
                     </div>
-                    
                 </div>
 
                 <button onclick="reproducirListaEntera('${id}')" style="background:#3B82F6; color:white; width:100%; padding:10px; font-size:14px; border-radius:8px; margin-bottom:15px; border:none; font-weight:bold; cursor:pointer;">▶ Reproducir todo</button>
@@ -1331,6 +1315,20 @@ function verListaLocal(id, cat) {
                 
                 <button class="boton-texto texto-rojo" onclick="eliminarListaLocal('${id}', '${cat}')" style="width:100%; margin-top:20px; font-size:13px;">🗑 Eliminar lista entera</button>`;
         };
+    });
+}
+
+// Actualizamos esta función para que use el cuadro flotante
+function eliminarAudioDirecto(idA, idL, cat) { 
+    confirmar("¿Eliminar esta canción?", () => {
+        initAudioDB(() => { 
+            const tx = dbAudio.transaction("audios", "readwrite"); 
+            tx.objectStore("audios").delete(idA); 
+            tx.oncomplete = () => { 
+                aviso("🗑 Canción eliminada."); 
+                verListaLocal(idL, cat); 
+            }; 
+        }); 
     });
 }
 
@@ -1377,31 +1375,39 @@ function eliminarPodcast(id) { confirmar("¿Eliminar?", () => { podcastsGuardado
 
 function mostrarVideos() {
     guardarScroll();
+    
     const l = videosGuardados.length === 0 ? `<p style="text-align:center;">No hay vídeos guardados.</p>` : videosGuardados.map(v => `
         <div class="item-mini" onclick="reproducirVideoEnLista('${v.id}', '${v.url}')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span style="font-size:14px; color:var(--text-main);">🎥 ${escaparHTML(v.nombre)}</span>
-            <button onclick="event.stopPropagation(); toggleConfirmacionVideo('${v.id}')" style="background:transparent; border:none; color:#EF4444; font-size:20px; width:40px; height:40px; padding:0; flex-shrink:0; cursor:pointer;">🗑</button>
-        </div>
-        <div id="confirm_${v.id}" style="display:none; padding:8px; background:var(--bg-main); border-radius:8px; margin-top:5px; margin-bottom:10px; border:1px solid var(--border-color);">
-            <p style="margin:0 0 5px 0; font-size:11px; text-align:center;">¿Eliminar vídeo?</p>
-            <div style="display:flex; gap:5px;">
-                <button onclick="eliminarVideoDirecto('${v.id}')" style="background:#10B981; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">Sí</button>
-                <button onclick="toggleConfirmacionVideo('${v.id}')" style="background:#EF4444; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">No</button>
-            </div>
+            <!-- La papelera ahora llama directamente a eliminarVideoDirecto -->
+            <button onclick="event.stopPropagation(); eliminarVideoDirecto('${v.id}')" style="background:transparent; border:none; color:#EF4444; font-size:18px; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">🗑</button>
         </div>
         <div id="player_${v.id}" style="margin-bottom:15px;"></div>
     `).join("");
 
     contenido.innerHTML = `
         <h2>Vídeos Guardados</h2>
+        
         <div class="tarjeta-rutina" style="text-align:center; padding:15px 10px; margin-bottom:15px;">
             <p style="margin:0 0 10px 0; font-size:13px;">Abre la app de YouTube si lo prefieres.</p>
             <button onclick="abrirEnlace('https://www.youtube.com')" style="background:#EF4444; width: 70%; margin: 0 auto; display: block; padding: 8px 12px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border: none; cursor: pointer;">▶ Abrir YouTube</button>
         </div>
+
         <button onclick="mostrarFormularioVideo()" style="background:#3B82F6; width: 70%; margin: 0 auto 15px auto; display: block; padding: 8px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border: none; cursor:pointer;">+ Añadir vídeo</button>
+        
         ${l}
     `;
     restaurarScroll();
+}
+
+// Actualizamos esta función para que use el cuadro flotante
+function eliminarVideoDirecto(id) { 
+    confirmar("¿Eliminar este vídeo?", () => {
+        videosGuardados = videosGuardados.filter(x => x.id !== id); 
+        guardarDatos(); 
+        mostrarVideos(); 
+        aviso("🗑 Vídeo eliminado."); 
+    });
 }
 
 function toggleConfirmacionVideo(id) { const div = document.getElementById(`confirm_${id}`); if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none'; }
