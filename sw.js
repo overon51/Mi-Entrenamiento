@@ -1,4 +1,4 @@
-const CACHE_NAME = 'entrenamiento-v11';
+const CACHE_NAME = 'entrenamiento-v12';
 const ARCHIVOS = ['./', './index.html', './style.css', './script.js', './manifest.json'];
 
 self.addEventListener('install', function(e) {
