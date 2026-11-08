@@ -1,15 +1,34 @@
 :root {
-    --bg-main: #0F172A;       /* Fondo azul muy oscuro */
-    --bg-card: #1E293B;       /* Fondo de las tarjetas */
-    --bg-box: #334155;        /* Fondo de los botones */
-    --text-main: #F8FAFC;     /* Texto blanco */
-    --text-muted: #94A3B8;    /* Texto gris */
-    --accent: #3B82F6;        /* Azul brillante para acentos */
+    --bg-main: #0F172A;
+    --bg-card: #1E293B;
+    --bg-box: #334155;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --accent: #3B82F6;
     --border-color: #334155;
     --escala: 1;
-    --sombra: none;           /* Quitamos sombras para un look más plano */
+    --radio: 30px;
     --dia-fondo: #1E293B;
-    --radio: 30px;            /* Botones tipo pastilla por defecto */
+}
+
+body.tema-oscuro {
+    --bg-main: #0F172A;
+    --bg-card: #1E293B;
+    --bg-box: #334155;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --border-color: #334155;
+    --dia-fondo: #1E293B;
+}
+
+body.tema-oled {
+    --bg-main: #000000;
+    --bg-card: #0a0a0a;
+    --bg-box: #121212;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+    --border-color: #333333;
+    --dia-fondo: #0a0a0a;
 }
 
 body.tema-claro {
@@ -35,134 +54,304 @@ body {
     font-size: calc(15px * var(--escala));
     margin: 0;
     padding: 15px;
-    padding-bottom: 90px; /* Espacio para el reproductor flotante */
+    padding-bottom: 90px;
     transition: background 0.3s, color 0.3s;
 }
 
-header { text-align: center; margin-bottom: 25px; }
-h1 { font-size: 24px; color: var(--text-main); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px; text-transform: uppercase; }
-header p { color: var(--text-muted); font-size: 14px; }
-h2 { font-size: 20px; font-weight: 700; color: var(--text-main); margin-top: 0; }
-h3 { font-size: 16px; font-weight: 600; color: var(--text-main); }
-p, label, td, th { color: var(--text-muted); line-height: 1.5; }
+header { text-align: center; margin-bottom: 20px; }
+h1 { font-size: 22px; color: var(--text-main); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 5px; text-transform: uppercase; }
+header p { color: var(--text-muted); font-size: 13px; }
+h2 { font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 0; margin-bottom: 15px; }
+h3 { font-size: 15px; font-weight: 600; color: var(--text-main); }
+p, label, td, th { color: var(--text-muted); line-height: 1.4; font-size: 14px; }
 
-/* ===== BOTONES DEL MENÚ (ESTILO PASTILLA) ===== */
-.menu { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-.menu button { 
+/* ===== MENÚ EN 1 COLUMNA (TODOS MISMO TAMAÑO) ===== */
+.menu { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px;
+    margin-bottom: 20px; 
+}
+.menu button, .menu .boton-ajustes { 
     background: var(--bg-box); 
     color: var(--text-main); 
-    min-height: 55px; 
+    width: 100%;
+    min-height: 45px; 
     display: flex; 
-    justify-content: center; 
+    justify-content: center; /* <-- AQUÍ ESTÁ EL CAMBIO: de flex-start a center */
     align-items: center; 
     border: none; 
-    border-radius: var(--radio); /* Aquí se aplica la forma ovalada */
+    border-radius: var(--radio); 
     font-size: calc(14px * var(--escala)); 
-    text-align: center; 
-    font-weight: 600;
-    padding: 10px;
+    font-weight: 600; 
+    padding: 10px; /* <-- Cambiado para que no quede espacio extra a la izquierda */
 }
-.menu .boton-ajustes { 
-    grid-column: 1 / -1; 
-    background: var(--bg-box); 
-    min-height: 45px; 
+
+/* ===== CONTENIDO DINÁMICO ===== */
+#contenido {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 15px;
+    margin: 5px 0 15px 0;
 }
 
 /* ===== BOTONES GENERALES ===== */
 button {
-    background: var(--bg-box);
-    color: var(--text-main);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radio);
-    padding: 12px 16px;
-    font-size: calc(14px * var(--escala));
-    cursor: pointer;
-    font-weight: 600;
-    transition: opacity 0.2s;
+    background: var(--bg-box); color: var(--text-main); border: 1px solid var(--border-color);
+    border-radius: var(--radio); padding: 10px 14px; font-size: calc(14px * var(--escala));
+    cursor: pointer; font-weight: 600; transition: opacity 0.2s;
 }
 button:active { opacity: 0.7; }
-
-.boton-mini { padding: 8px 12px; font-size: 12px; border-radius: 10px; background: var(--bg-box); color: var(--text-main); display: inline-block; }
-.boton-texto { background: transparent !important; border: none !important; color: var(--text-main); padding: 8px 12px 8px 0; font-weight: 600; }
+.boton-mini { padding: 6px 12px; font-size: 12px; border-radius: 10px; background: var(--bg-box); color: var(--text-main); display: inline-block; }
+.boton-texto { background: transparent !important; border: none !important; color: var(--text-main); padding: 6px 10px 6px 0; font-weight: 600; font-size: 13px;}
 .boton-texto.texto-rojo { color: #EF4444 !important; }
 .boton-texto.texto-azul { color: var(--accent) !important; }
 
-#contenido { padding: 0; margin-top: 10px; }
-
-/* ===== TARJETAS ===== */
-.tarjeta-ejercicio, .tarjeta-rutina, .panel-correr, .ajuste, .caja-grafica, .dato-resumen {
-    background: var(--bg-card);
-    padding: 18px;
-    border-radius: 16px;
-    margin-top: 12px;
-    border: 1px solid var(--border-color);
+/* ===== DASHBOARD INICIO (2 COLUMNAS Y EXPANDIBLES) ===== */
+.inicio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 15px;
 }
-.tarjeta-ejercicio h3, .tarjeta-rutina h3 { margin: 0 0 5px 0; font-size: 16px; color: var(--text-main); }
-.etiqueta { background: var(--bg-box); color: var(--text-muted); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.tarjeta-inicio {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px; /* Más pequeñas */
+}
+.tarjeta-inicio.expandida {
+    grid-column: 1 / -1;
+    min-height: 130px;
+}
+.tarjeta-inicio h3 { font-size: 13px; margin: 5px 0; }
+.tarjeta-inicio p { font-size: 11px; margin: 0; }
+.tarjeta-inicio .icono-grande { font-size: 24px; margin-bottom: 5px; }
+
+/* ===== TARJETAS GENERALES ===== */
+.tarjeta-ejercicio, .tarjeta-rutina, .panel-correr, .ajuste, .caja-grafica, .dato-resumen {
+    background: var(--bg-card); padding: 14px; border-radius: 14px; margin-top: 10px; border: 1px solid var(--border-color);
+}
+.tarjeta-ejercicio h3, .tarjeta-rutina h3 { margin: 0 0 5px 0; font-size: 15px; color: var(--text-main); }
+.etiqueta { background: var(--bg-box); color: var(--text-muted); padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
 
 /* ===== INPUTS ===== */
 #contenido input, #contenido select, #contenido textarea {
-    width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px;
-    border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 15px;
+    width: 100%; padding: 12px; margin: 6px 0; border-radius: 10px;
+    border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); font-size: 14px;
 }
-#contenido label { font-size: 13px; font-weight: 600; margin-top: 10px; display: block; color: var(--text-muted); }
+#contenido label { font-size: 12px; font-weight: 600; margin-top: 8px; display: block; color: var(--text-muted); }
 
 /* ===== CHIPS ===== */
-.filtros-letras, .selector-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+.filtros-letras, .selector-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
 .chip-ejercicio, .chip {
     border-radius: var(--radio); border: 2px solid var(--border-color); background: var(--bg-card);
-    color: var(--text-main); padding: 8px 16px; font-size: 13px; font-weight: 600;
+    color: var(--text-main); padding: 6px 14px; font-size: 12px; font-weight: 600;
 }
 .chip-ejercicio.activo, .chip.activo { border-color: var(--accent); color: var(--accent); }
 
-/* ===== RELOJ Y CRONÓMETRO ===== */
-.reloj { background: var(--bg-card); padding: 25px; border-radius: 24px; text-align: center; border: 4px solid transparent; transition: border-color 0.3s, box-shadow 0.3s; }
-#tiempo { font-size: 52px; font-weight: 800; color: var(--text-main); margin: 10px; font-family: monospace; letter-spacing: -2px; }
-.botones-reloj, .grid-opciones-descanso { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-.grid-opciones-descanso button { background: #F97316; color: white; border: none; }
+/* ===== CRONÓMETRO Y LUCES ===== */
+.reloj { background: var(--bg-main); padding: 20px; border-radius: 20px; text-align: center; border: 4px solid transparent; transition: border-color 0.3s, box-shadow 0.3s; }
+#tiempo { font-size: 48px; font-weight: 800; color: var(--text-main); margin: 10px; font-family: monospace; letter-spacing: -2px; }
+.botones-reloj, .grid-opciones-descanso { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+.boton-iniciar { background: #10B981 !important; color: white !important; }
+.boton-pausar { background: #EF4444 !important; color: white !important; }
+.grid-opciones-descanso button { background: #3B82F6 !important; color: white !important; }
 
 .reloj.brillo-verde { border-color: #10B981; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.5), 0 0 40px 15px rgba(16, 185, 129, 0.7); }
 .reloj.brillo-rojo { border-color: #EF4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.5), 0 0 40px 15px rgba(239, 68, 68, 0.7); }
-.reloj.brillo-naranja { border-color: #F97316; box-shadow: 0 0 0 6px rgba(249, 115, 22, 0.5), 0 0 40px 15px rgba(249, 115, 22, 0.7); }
+.reloj.brillo-azul { border-color: #3B82F6; box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.5), 0 0 40px 15px rgba(59, 130, 246, 0.7); }
 
 /* ===== CALENDARIO ===== */
-.calendario-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.dia-calendario { background: var(--bg-card); color: var(--text-main); border-radius: 10px; aspect-ratio: 1; display: flex; justify-content: center; align-items: center; font-weight: 600; font-size: 14px; position: relative; border: 1px solid var(--border-color); }
+.calendario-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.dia-calendario { background: var(--bg-main); color: var(--text-main); border-radius: 8px; aspect-ratio: 1; display: flex; justify-content: center; align-items: center; font-weight: 600; font-size: 13px; position: relative; border: 1px solid var(--border-color); }
 .dia-calendario.dia-hoy { background: #10B981; color: white; border: none; }
 .dia-calendario.dia-hoy .barras-dia { display: none; }
-.barras-dia { position: absolute; bottom: 4px; left: 20%; right: 20%; display: flex; flex-direction: column; gap: 2px; }
-.barra-entreno { background: #F59E0B; height: 3px; border-radius: 2px; }
-.barra-nota { background: #3B82F6; height: 3px; border-radius: 2px; }
-.barra-carrera { background: #EF4444; height: 3px; border-radius: 2px; }
+.barras-dia { position: absolute; bottom: 3px; left: 20%; right: 20%; display: flex; flex-direction: column; gap: 2px; }
+.barra-entreno { background: #F59E0B; height: 2px; border-radius: 1px; }
+.barra-nota { background: #3B82F6; height: 2px; border-radius: 1px; }
+.barra-carrera { background: #EF4444; height: 2px; border-radius: 1px; }
 
-.mini-mes { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 4px 8px; display: flex; flex-direction: column; gap: 4px; text-align: center; min-width: 0; }
+.mini-mes { background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 2px 6px; display: flex; flex-direction: column; gap: 3px; text-align: center; min-width: 0; }
 .mini-mes-actual { border-color: var(--accent); }
-.mini-mes-titulo { font-size: 12px; font-weight: bold; color: var(--text-main); }
+.mini-mes-titulo { font-size: 10px; font-weight: bold; color: var(--text-main); }
 .mini-mes-dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; }
-.mini-dia { font-size: 8px; line-height: 12px; height: 12px; border-radius: 3px; color: var(--text-main); }
+.mini-dia { font-size: 7px; line-height: 10px; height: 10px; border-radius: 2px; color: var(--text-main); }
 .mini-dia.mini-hoy { background: #10B981; color: #ffffff; font-weight: bold; }
 
 /* ===== REPRODUCTOR FLOTANTE ===== */
 #floating-player {
     position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border-color);
-    padding: 15px; display: none; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 1000; align-items: center; gap: 15px;
+    padding: 12px; display: none; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); z-index: 1000; align-items: center; gap: 12px;
 }
 #floating-player .info { flex: 1; overflow: hidden; }
-#floating-player .info h4 { margin: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main);}
-#floating-player .info span { font-size: 12px; color: var(--text-muted); }
-#floating-player .controles { display: flex; gap: 10px; }
-#floating-player button { width: 45px; height: 45px; border-radius: 50%; padding: 0; display: flex; justify-content: center; align-items: center; background: var(--bg-box); border: none; }
+#floating-player .info h4 { margin: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main);}
+#floating-player .info span { font-size: 11px; color: var(--text-muted); }
+#floating-player .controles { display: flex; gap: 8px; }
+#floating-player button { width: 40px; height: 40px; border-radius: 50%; padding: 0; display: flex; justify-content: center; align-items: center; background: var(--bg-box); border: none; }
 
-/* ===== CLIMA ===== */
-.clima-actual { text-align: center; padding: 20px; background: var(--bg-box); border-radius: 16px; color: white; margin-bottom: 15px; border: none;}
-.clima-actual h3 { font-size: 48px; margin: 10px 0; color: white; }
-.clima-horas { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; }
-.clima-hora { background: var(--bg-card); padding: 10px 15px; border-radius: 15px; text-align: center; min-width: 70px; border: 1px solid var(--border-color); }
-.clima-hora span { display: block; font-size: 12px; color: var(--text-muted); }
-.clima-hora strong { display: block; font-size: 16px; margin-top: 5px; color: var(--text-main);}
+/* ===== CLIMA Y RADAR ===== */
+.radar-tiempo { position: relative; width: 120px; height: 120px; margin: 0 auto 10px auto; }
+.radar-tiempo svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.radar-tiempo .temperatura-texto { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold; color: var(--text-main); }
+.clima-horas { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 5px; }
+.clima-hora { background: var(--bg-main); padding: 8px 12px; border-radius: 12px; text-align: center; min-width: 60px; border: 1px solid var(--border-color); }
+.clima-hora span { display: block; font-size: 11px; color: var(--text-muted); }
+.clima-hora strong { display: block; font-size: 14px; margin-top: 3px; color: var(--text-main);}
+
+/* ===== PROGRESO ===== */
+.fila-registro { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding: 8px 0; }
+.fila-registro:last-child { border-bottom: none; }
+.fila-registro .fecha { font-size: 11px; color: var(--text-muted); width: 60px; }
+.fila-registro .datos { flex: 1; font-size: 12px; color: var(--text-main); font-weight: 500; }
+.fila-registro .btn-borrar-mini { background: transparent; border: none; color: #EF4444; font-size: 14px; padding: 5px; cursor: pointer; }
 
 /* Ajustes */
-.ajuste summary { padding: 15px; font-weight: 600; color: var(--text-main); cursor: pointer; }
-.muestra-color { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;}
+.ajuste summary { padding: 12px; font-weight: 600; color: var(--text-main); cursor: pointer; font-size: 14px;}
+.muestra-color { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;}
 .muestra-color.activo { border-color: var(--text-main); }
 
+/* Listas minimalistas */
+.item-mini {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.btn-mini-accion {
+    background: var(--bg-box);
+    color: var(--text-main);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-mini-accion:active { opacity: 0.7; }
+
+/* ===== TEMA BICOLOR ===== */
+body.tema-bicolor {
+    --bg-main: #1A1B41;      /* Fondo azul noche */
+    --bg-card: #2D2E5A;      /* Tarjetas moradas */
+    --bg-box: #3D3E73;       /* Cajas más claras */
+    --text-main: #FFFFFF;
+    --text-muted: #B0B3D6;
+    --border-color: #4B4C8A;
+    --dia-fondo: #2D2E5A;
+}
+
+/* Modal flotante estilo Bottom Sheet (sale desde abajo) */
+.modal-fondo {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal-caja {
+    background: var(--bg-card);
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 20px;
+    padding-bottom: 30px;
+    animation: subirModal 0.3s ease-out;
+}
+@keyframes subirModal {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* =====================================================
+   REGLA GLOBAL: TARJETAS MÁS COMPACTAS
+   ===================================================== */
+
+/* Hacemos que todas las tarjetas principales sean más finas */
+.tarjeta-ejercicio, 
+.tarjeta-rutina, 
+.panel-correr, 
+.ajuste, 
+.caja-grafica, 
+.dato-resumen {
+    padding: 10px 12px !important; /* Reducimos el relleno interno */
+    margin-top: 6px !important;     /* Menos espacio entre tarjetas */
+    border-radius: 12px !important;
+}
+
+/* Ajustamos los títulos dentro de las tarjetas para que no ocupen tanto */
+.tarjeta-ejercicio h3, 
+.tarjeta-rutina h3 {
+    font-size: 14px !important;
+    margin: 0 0 4px 0 !important;
+}
+
+/* Hacemos los párrafos y textos secundarios un pelín más pequeños */
+.tarjeta-ejercicio p, 
+.tarjeta-rutina p,
+.etiqueta {
+    font-size: 12px !important;
+    margin-bottom: 2px;
+}
+
+/* Compactamos las listas (Música, Podcasts, Vídeos y el nuevo Historial) */
+.item-mini {
+    padding: 8px 12px !important;
+    margin-bottom: 6px !important;
+}
+
+/* Compactamos los datos resumen (como los de Progreso y Cardio) */
+.dato-resumen {
+    padding: 8px !important;
+}
+.dato-resumen strong {
+    font-size: 20px !important;
+}
+.dato-resumen span {
+    font-size: 11px !important;
+}
+
+/* Compactamos el menú desplegable de Ajustes */
+.ajuste summary {
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+}
+
+/* =====================================================
+   BOTONES COMPACTOS EN CRONÓMETRO Y ENTRENAMIENTO
+   ===================================================== */
+.botones-reloj button,
+.grid-opciones-descanso button {
+    min-height: 35px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+}
+
+/* Hacer que los botones de Normal/Circuito vayan uno al lado del otro */
+.selector-chips {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+}
+.selector-chips button {
+    flex: 1 !important;
+    padding: 8px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+}
