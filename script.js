@@ -1,8 +1,10 @@
-const APP_VERSION = "5.0";
+const APP_VERSION = "9.5";
+const paletaColores = [["#FF6B6B","Coral"], ["#2196F3","Azul"], ["#10B981","Verde"], ["#F59E0B","Amarillo"], ["#8B5CF6","Morado"], ["#EF4444","Rojo"], ["#EC4899","Rosa"], ["#14B8A6","Turquesa"], ["#F97316","Naranja"], ["#0F172A","Oscuro"], ["#FFFFFF","Blanco"]];
+const botonesMenu = [["ejercicios", "Ejercicios"], ["rutinas", "Rutinas"], ["progreso", "Progreso"], ["cronometro", "Cronómetro"], ["correr", "Cardio"], ["calendario", "Calendario"], ["tiempo", "Tiempo"], ["musica", "Música"], ["video", "Vídeos"]];
 let contenido = null;
 let misEjercicios = [], rutinas = [], historial = [], ejerciciosOcultos = [], medidasCuerpo = [], notasDias = {}, carreras = [], listasMusica = [], videosGuardados = [], podcastsGuardados = [];
 let coloresMenu = {}, colorMenuGlobal = "", menuSeleccionado = "todos";
-let tipoCardio = "correr", vozCorrer = true, alturaCm = 0, temaActual = "claro", letraActual = "mediana", colorActual = "#FF6B6B", grupoActual = "";
+let tipoCardio = "correr", vozCorrer = true, alturaCm = 0, temaActual = "claro", letraActual = "mediana", colorActual = "#3B82F6", grupoActual = "";
 let formaBotones = "redondeado", opacidadColor = 1;
 let metricaActual = "peso", periodoActual = 0;
 let cronoIntervalo = null, cronoModo = "parado", cronoMs = 0, cronoInicio = 0, cronoFin = 0, cronoColor = "";
@@ -11,12 +13,10 @@ let correr = nuevoEstadoCorrer();
 
 let playlistActual = [], indiceCancion = 0;
 let audioGlobal = null, floatingPlayer = null;
-let historialNavegacion = [];
-let navegandoAtras = false;
 let posicionScroll = 0;
+
 function guardarScroll() { posicionScroll = window.scrollY; }
 function restaurarScroll() { setTimeout(() => { window.scrollTo({ top: posicionScroll, behavior: 'instant' }); }, 10); }
-const botonesMenu = [["inicio", "Inicio"], ["ejercicios", "Ejercicios"], ["rutinas", "Rutinas"], ["progreso", "Progreso"], ["cronometro", "Cronómetro"], ["calendario", "Calendario"], ["correr", "Cardio"], ["tiempo", "Tiempo"], ["musica", "Música"], ["video", "Vídeos"]];
 
 document.addEventListener("DOMContentLoaded", function() {
     contenido = document.getElementById("contenido");
@@ -38,9 +38,9 @@ document.addEventListener("DOMContentLoaded", function() {
     vozCorrer = leerTexto("vozCorrer", "1") !== "0";
     alturaCm = parseFloat(leerTexto("alturaCm", "0")) || 0;
     
-    temaActual = leerTexto("temaApp", "claro");
+    temaActual = leerTexto("temaApp", "oscuro");
     letraActual = leerTexto("tamanioLetraApp", "mediana");
-    colorActual = leerTexto("colorApp", "#FF6B6B");
+    colorActual = leerTexto("colorApp", "#3B82F6");
     formaBotones = leerTexto("formaBotonesApp", "redondeado");
     opacidadColor = parseFloat(leerTexto("opacidadColorApp", "1"));
 
@@ -51,7 +51,12 @@ document.addEventListener("DOMContentLoaded", function() {
     if (!/^#[0-9a-f]{6}$/i.test(colorMenuGlobal)) colorMenuGlobal = "";
 
     aplicarPreferencias();
-    mostrarPanelPrincipal();
+    const vistaGuardada = sessionStorage.getItem("vistaActual");
+if (vistaGuardada && vistaGuardada !== "inicio") {
+    setTimeout(() => { mostrar(vistaGuardada); }, 50);
+} else {
+    mostrarInicio();
+}
     procesarEnlaceCompartido();
 
     if(audioGlobal) audioGlobal.addEventListener('ended', nextSong);
@@ -79,29 +84,19 @@ function hexToRgba(hex, alpha) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function colorDeBoton(clave) { return coloresMenu[clave] || colorMenuGlobal || colorActual; }
-
 function aplicarPreferencias() {
     document.body.className = "";
     if (temaActual === "oscuro") document.body.classList.add("tema-oscuro");
     if (temaActual === "oled") document.body.classList.add("tema-oled");
     if (temaActual === "claro") document.body.classList.add("tema-claro");
+    if (temaActual === "bicolor") document.body.classList.add("tema-bicolor");
     document.body.classList.add("letra-" + letraActual);
     
     const colorFinal = opacidadColor >= 1 ? colorActual : hexToRgba(colorActual, opacidadColor);
     document.documentElement.style.setProperty("--accent", colorFinal);
 
     const formas = { "recto": "4px", "redondeado": "14px", "pastilla": "40px", "circulo": "50%" };
-    document.documentElement.style.setProperty("--radio", formas[formaBotones] || "14px");
-
-    botonesMenu.forEach(function(b) {
-        const boton = document.querySelector(`.menu button[onclick="mostrar('${b[0]}')"]`);
-        if (boton) { 
-            let cBtn = colorDeBoton(b[0]);
-            boton.style.background = opacidadColor >= 1 ? cBtn : hexToRgba(cBtn, opacidadColor); 
-            boton.style.color = "#ffffff"; 
-        }
-    });
+    document.documentElement.style.setProperty("--radio", formas[formaBotones] || "40px");
 }
 
 function generarId() { return "id_" + Date.now() + "_" + Math.floor(Math.random() * 1000); }
@@ -116,79 +111,109 @@ let avisoTimeout = null;
 function aviso(t) { const c = document.getElementById("aviso"); if(!c) return; c.textContent = t; c.classList.add("visible"); clearTimeout(avisoTimeout); avisoTimeout = setTimeout(() => c.classList.remove("visible"), 2800); }
 window.alert = (t) => aviso(t);
 
-function confirmar(texto, alAceptar) {
-    const f = document.createElement("div"); f.className = "modal-fondo";
-    f.innerHTML = `<div class="modal-caja"><p>${escaparHTML(texto)}</p><div class="modal-botones"><button class="boton-si" style="background:#10B981;">Sí</button><button class="boton-no" style="background:#EF4444;">No</button></div></div>`;
-    document.body.appendChild(f);
-    f.querySelector(".boton-si").onclick = () => { f.remove(); alAceptar(); };
-    f.querySelector(".boton-no").onclick = () => f.remove();
+function confirmar(texto, alAceptar, eventoTarget) {
+    if (eventoTarget) {
+        // Ventana emergente EN LÍNEA (justo debajo del botón)
+        const anterior = document.getElementById("confirm-inline");
+        if (anterior) anterior.remove();
+
+        const f = document.createElement("div");
+        f.id = "confirm-inline";
+        f.style.cssText = "background:var(--bg-box); padding:12px; border-radius:10px; margin-top:10px; border:1px solid var(--border-color); width:100%;";
+        f.innerHTML = `<p style="margin:0 0 10px 0; color:var(--text-main); font-size:13px; text-align:center;">${escaparHTML(texto)}</p>
+            <div style="display:flex; gap:10px;">
+                <button class="boton-si" style="background:#10B981; color:white; flex:1; padding:8px; font-size:13px; border-radius:8px; border:none;">Sí</button>
+                <button class="boton-no" style="background:#EF4444; color:white; flex:1; padding:8px; font-size:13px; border-radius:8px; border:none;">No</button>
+            </div>`;
+        
+        // Lo insertamos justo después del botón que hemos pulsado
+        eventoTarget.parentNode.insertBefore(f, eventoTarget.nextSibling);
+        
+        f.querySelector(".boton-si").onclick = () => { f.remove(); alAceptar(); };
+        f.querySelector(".boton-no").onclick = () => f.remove();
+    } else {
+        // Ventana emergente FLOTANTE (para acciones sin botón específico, como importar)
+        const f = document.createElement("div"); f.className = "modal-fondo";
+        f.innerHTML = `<div class="modal-caja"><p>${escaparHTML(texto)}</p><div class="modal-botones"><button class="boton-si" style="background:#10B981;">Sí</button><button class="boton-no" style="background:#EF4444;">No</button></div></div>`;
+        document.body.appendChild(f);
+        f.querySelector(".boton-si").onclick = () => { f.remove(); alAceptar(); };
+        f.querySelector(".boton-no").onclick = () => f.remove();
+    }
 }
 
-function abrirEnlace(url) { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
-
-function mostrarPanelPrincipal() {
-    if (!contenido) return;
-    contenido.innerHTML = `<div style="text-align:center; padding: 40px 20px; opacity: 0.7;"><h3>💪 Panel Principal</h3><p>Selecciona una opción en el menú superior.</p></div>`;
+function abrirEnlace(url) { 
+    const a = document.createElement("a"); 
+    a.href = url; 
+    a.target = "_blank"; 
+    a.rel = "noopener"; 
+    document.body.appendChild(a); 
+    a.click(); 
+    a.remove(); 
 }
 
 function mostrar(apartado) {
-    if (!navegandoAtras) {
-        if (historialNavegacion[historialNavegacion.length - 1] !== apartado) historialNavegacion.push(apartado);
-    }
-    navegandoAtras = false;
-    const btnAtras = historialNavegacion.length > 1 ? `<button class="boton-texto texto-azul" style="margin-bottom: 15px; font-size: 16px;" onclick="volverAtras()">⬅ Atrás</button>` : "";
-
-    if (contenido.querySelector(`[data-vista="${apartado}"]`)) { mostrarPanelPrincipal(); return; }
-    const v = { inicio: mostrarInicio, ejercicios: mostrarEjercicios, rutinas: mostrarRutinas, progreso: mostrarProgreso, cronometro: mostrarCronometro, calendario: mostrarCalendario, correr: mostrarCorrer, musica: mostrarMusica, video: mostrarVideos, tiempo: mostrarTiempo, ajustes: mostrarAjustes, podcasts: mostrarPodcasts };
-    if (!v[apartado]) return;
-    v[apartado]();
+    const cont = document.getElementById("contenido");
+    const panelInicio = document.getElementById("inicio-panel");
+    const btn = document.querySelector(`.menu button[onclick="mostrar('${apartado}')"]`);
     
-    if (!contenido.querySelector(`[data-vista="${apartado}"]`)) contenido.insertAdjacentHTML("afterbegin", `<span data-vista="${apartado}" hidden></span>`);
-    contenido.insertAdjacentHTML("afterbegin", btnAtras);
-    contenido.scrollIntoView({ behavior: "smooth", block: "start" });
-}
+    sessionStorage.setItem("vistaActual", apartado); // <--- GUARDA LA VISTA
 
-function volverAtras() {
-    if (historialNavegacion.length > 1) {
-        historialNavegacion.pop();
-        navegandoAtras = true;
-        mostrar(historialNavegacion[historialNavegacion.length - 1]);
-    } else {
-        mostrar('inicio');
+    if(panelInicio) panelInicio.style.display = "none";
+
+    if (cont.style.display === "block" && cont.dataset.vistaActual === apartado) {
+        cont.style.display = "none";
+        cont.dataset.vistaActual = "";
+        sessionStorage.removeItem("vistaActual"); // <--- BORRA SI SE CIERRA
+        if(panelInicio) panelInicio.style.display = "block";
+        return;
     }
+
+    if (btn) {
+        btn.parentNode.insertBefore(cont, btn.nextSibling);
+    }
+
+    cont.style.display = "block";
+    cont.dataset.vistaActual = apartado;
+    
+    const v = { inicio: mostrarInicio, ejercicios: mostrarEjercicios, rutinas: mostrarRutinas, progreso: mostrarProgreso, cronometro: mostrarCronometro, calendario: mostrarCalendario, correr: mostrarCorrer, musica: mostrarMusica, video: mostrarVideos, tiempo: mostrarTiempo, ajustes: mostrarAjustes, podcasts: mostrarPodcasts };
+    if (v[apartado]) v[apartado]();
 }
 
 function mostrarInicio() {
+    const cont = document.getElementById("contenido");
+    cont.style.display = "none";
+    const panel = document.getElementById("inicio-panel");
+    panel.style.display = "block";
+
     const uP = obtenerUltimoPeso();
     
-    contenido.innerHTML = `
-        <span data-vista="inicio" hidden></span>
-        <h2>Inicio</h2>
-        <p>¿Qué vamos a entrenar hoy?</p>
-        
-        <div class="tarjeta-rutina" onclick="mostrar('rutinas')" style="cursor:pointer;">
-            <h3>💪 Mis rutinas</h3>
-            <p>Tienes ${rutinas.length} rutinas creadas.</p>
-        </div>
+    panel.innerHTML = `
+        <div class="inicio-grid">
+            <div class="tarjeta-inicio" onclick="this.classList.toggle('expandida')">
+                <div class="icono-grande">💪</div>
+                <h3>Rutinas</h3>
+                <p>${rutinas.length} creadas</p>
+            </div>
+            
+            <div class="tarjeta-inicio" onclick="this.classList.toggle('expandida')">
+                <div class="icono-grande">📅</div>
+                <h3>Entrenos</h3>
+                <p>${historial.length} hechos</p>
+            </div>
 
-        <div class="tarjeta-rutina" onclick="mostrar('calendario')" style="cursor:pointer;">
-            <h3>📅 Entrenamientos</h3>
-            <p>Has registrado ${historial.length} entrenamientos y ${carreras.length} carreras.</p>
-        </div>
+            <div class="tarjeta-inicio" style="grid-column: 1 / -1;" id="inicioTiempoCard">
+                <h3>🌤️ El Tiempo</h3>
+                <div id="tiempoInicioContenido"><p>Buscando...</p></div>
+            </div>
 
-        <div class="tarjeta-rutina" id="inicioTiempo">
-            <h3>🌤️ El Tiempo</h3>
-            <div id="tiempoInicioContenido"><p>Buscando el tiempo...</p></div>
-        </div>
-
-        <div class="tarjeta-rutina" onclick="mostrar('progreso')" style="cursor:pointer;">
-            <h3>📈 Evolución del peso</h3>
-            ${uP ? `<p>Último registro: ${formatoNum(uP.valor)} kg (${formatearFecha(uP.fecha)})</p>` : "<p>Sin registros de peso aún.</p>"}
-            <div id="graficaInicio" style="margin-top:10px;"></div>
+            <div class="tarjeta-inicio" style="grid-column: 1 / -1;" onclick="this.classList.toggle('expandida')">
+                <h3>📈 Evolución Peso</h3>
+                ${uP ? `<p>Último: ${formatoNum(uP.valor)} kg</p>` : "<p>Sin registros</p>"}
+                <div id="graficaInicio" style="width:100%; margin-top:10px;"></div>
+            </div>
         </div>
     `;
 
-    // Pintar la gráfica rápida en el inicio
     const registrosPeso = medidasCuerpo.filter(r => r.peso).sort((a,b) => a.fecha.localeCompare(b.fecha)).slice(-7);
     if (registrosPeso.length >= 2) {
         const max = Math.max(...registrosPeso.map(r => r.peso)) + 2;
@@ -200,33 +225,27 @@ function mostrarInicio() {
             polyline += `${x},${y} `;
             circulos += `<circle cx="${x}" cy="${y}" r="2" fill="var(--accent)" />`;
         });
-        document.getElementById("graficaInicio").innerHTML = `<svg viewBox="0 -5 100 110" style="width:100%; height:80px; overflow:visible;"><polyline points="${polyline}" fill="none" stroke="var(--accent)" stroke-width="2" />${circulos}</svg>`;
-    } else {
-        document.getElementById("graficaInicio").innerHTML = `<p style="font-size:12px; opacity:0.7;">Añade más registros para ver tu evolución.</p>`;
+        document.getElementById("graficaInicio").innerHTML = `<svg viewBox="0 -5 100 110" style="width:100%; height:60px; overflow:visible;"><polyline points="${polyline}" fill="none" stroke="var(--accent)" stroke-width="2" />${circulos}</svg>`;
     }
 
-    // Lógica del tiempo con memoria (caché)
     const cacheClima = localStorage.getItem("climaCache");
     const horaClima = localStorage.getItem("climaCacheHora");
-    const contClima = document.getElementById("tiempoInicioContenido");
-    
     if (cacheClima && horaClima && (Date.now() - parseInt(horaClima)) < 10800000) {
-        contClima.innerHTML = cacheClima; // Usar caché si tiene menos de 3 horas
+        document.getElementById("tiempoInicioContenido").innerHTML = cacheClima;
     } else {
         cargarTiempoInicio();
     }
 }
 
-// Función auxiliar para Inicio
 function cargarTiempoInicio() {
     const c = document.getElementById("tiempoInicioContenido");
     if (!c || !navigator.geolocation) return;
     
     navigator.geolocation.getCurrentPosition(function(pos) {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&hourly=temperature_2m,weathercode`)
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`)
         .then(r => r.json())
         .then(d => {
-            const t = d.current_weather.temperature, v = d.current_weather.windspeed, cod = d.current_weather.weathercode;
+            const t = d.current_weather.temperature, cod = d.current_weather.weathercode;
             let i = "🌤️", txt = "Despejado";
             if ([0, 1].includes(cod)) { i = "☀️"; txt = "Soleado"; } else if ([2, 3].includes(cod)) { i = "☁️"; txt = "Nublado"; } else if (cod >= 50) { i = "🌧️"; txt = "Lluvia"; }
             
@@ -234,7 +253,7 @@ function cargarTiempoInicio() {
                 <div style="text-align:center; padding:10px;">
                     <div style="font-size:40px; line-height:1;">${i}</div>
                     <h3 style="font-size:28px; margin:5px 0; color:var(--text-main);">${t}°C</h3>
-                    <p style="font-size:12px;">${txt} · Viento: ${v} km/h</p>
+                    <p style="font-size:12px;">${txt}</p>
                 </div>
             `;
             c.innerHTML = htmlClima;
@@ -244,16 +263,6 @@ function cargarTiempoInicio() {
     });
 }
 
-function cargarClimaCache() {
-    const cache = localStorage.getItem("climaCache");
-    const hora = localStorage.getItem("climaCacheHora");
-    // Si hay caché y tiene menos de 3 horas (10800000 ms), lo usamos
-    if (cache && hora && (Date.now() - parseInt(hora)) < 10800000) {
-        return cache;
-    }
-    return null;
-}
-
 /* =====================================================
    EJERCICIOS
 ===================================================== */
@@ -261,7 +270,6 @@ const URL_IMG = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main
 function ex(id, nombre, grupo, equipo, compuesto, descripcion, img) { return { id, nombre, grupo, equipo, compuesto, descripcion, img: img || "" }; }
 
 const ejerciciosBase = [
-    // ================= PECHO =================
     ex("e1", "Press de banca con barra", "Pecho", "Pesas", true, "Tumbado en el banco, baja la barra al pecho y empuja hacia arriba.", "Barbell_Bench_Press_-_Medium_Grip"),
     ex("e2", "Press de banca con mancuernas", "Pecho", "Pesas", true, "Tumbado, baja las mancuernas a los lados del pecho y empuja.", "Dumbbell_Bench_Press"),
     ex("e3", "Press inclinado con mancuernas", "Pecho", "Pesas", true, "Banco a 30-45 grados. Empuja las mancuernas hacia arriba.", "Incline_Dumbbell_Press"),
@@ -273,8 +281,6 @@ const ejerciciosBase = [
     ex("e9", "Fondos en paralelas (pecho)", "Pecho", "Peso corporal", true, "Inclina el torso hacia adelante y baja flexionando los codos.", "Dips_-_Chest_Version"),
     ex("e10", "Press de pecho con goma", "Pecho", "Gomas", true, "Goma por la espalda, sujeta los extremos y empuja al frente.", "Band_Press"),
     ex("e11", "Aperturas con goma", "Pecho", "Gomas", false, "Goma por la espalda, abre los brazos en arco.", "Band_Chest_Fly"),
-
-    // ================= ESPALDA =================
     ex("e12", "Dominadas", "Espalda", "Peso corporal", true, "Cuélgate de la barra y tira hasta pasar la barbilla.", "Pullups"),
     ex("e13", "Jalón al pecho en polea", "Espalda", "Polea", true, "Sentado, tira de la barra hacia la parte alta del pecho.", "Wide-Grip_Lat_Pulldown"),
     ex("e14", "Remo con barra", "Espalda", "Pesas", true, "Torso inclinado, tira de la barra hacia el abdomen.", "Bent_Over_Barbell_Row"),
@@ -288,8 +294,6 @@ const ejerciciosBase = [
     ex("e22", "Superman", "Espalda", "Peso corporal", false, "Boca abajo, eleva brazos y piernas simultáneamente.", "Superman"),
     ex("e23", "Remo con goma", "Espalda", "Gomas", true, "Goma en los pies, tira de los extremos hacia el abdomen.", "Seated_Band_Row"),
     ex("e24", "Jalón con goma", "Espalda", "Gomas", false, "Goma fijada en alto, tira hacia el pecho.", "Band_Pulldown"),
-
-    // ================= PIERNAS Y GLÚTEOS =================
     ex("e25", "Sentadilla con barra (trasera)", "Piernas", "Pesas", true, "Barra en trapecios. Baja la cadera como si te sentaras.", "Barbell_Squat"),
     ex("e26", "Sentadilla frontal con barra", "Piernas", "Pesas", true, "Barra apoyada en la parte delantera de los hombros.", "Front_Barbell_Squat"),
     ex("e27", "Sentadilla goblet", "Piernas", "Pesas", true, "Sujeta una mancuerna o kettlebell contra el pecho.", "Goblet_Squat"),
@@ -305,8 +309,6 @@ const ejerciciosBase = [
     ex("e37", "Sentadilla con goma", "Piernas", "Gomas", true, "Pisa la goma y sujeta los extremos en los hombros.", "Band_Squat"),
     ex("e38", "Patada de glúteo en polea", "Piernas", "Polea", false, "Patea hacia atrás con la pierna, apretando el glúteo.", "Glute_Kickback"),
     ex("e39", "Step-up con mancuernas", "Piernas", "Pesas", true, "Sube a un cajón o banco, una pierna a la vez.", "Dumbbell_Step_Ups"),
-
-    // ================= HOMBROS =================
     ex("e40", "Press militar con barra", "Hombros", "Pesas", true, "De pie o sentado, empuja la barra por encima de la cabeza.", "Standing_Military_Press"),
     ex("e41", "Press de hombros con mancuernas", "Hombros", "Pesas", true, "Sentado, empuja las mancuernas hacia arriba.", "Dumbbell_Shoulder_Press"),
     ex("e42", "Arnold press", "Hombros", "Pesas", true, "Empieza con mancuernas frente al pecho, gira y empuja.", "Arnold_Dumbbell_Press"),
@@ -317,8 +319,6 @@ const ejerciciosBase = [
     ex("e47", "Elevaciones laterales con goma", "Hombros", "Gomas", false, "Pisa la goma y eleva los brazos a los lados.", "Band_Lateral_Raise"),
     ex("e48", "Press de hombros con goma", "Hombros", "Gomas", true, "Pisa la goma y empuja los extremos hacia arriba.", "Band_Shoulder_Press"),
     ex("e49", "Encogimientos de hombros (trapecio)", "Hombros", "Pesas", false, "Sube los hombros hacia las orejas con mancuernas o barra.", "Dumbbell_Shrug"),
-
-    // ================= BÍCEPS =================
     ex("e50", "Curl de bíceps con barra", "Bíceps", "Pesas", false, "De pie, sube la barra flexionando los codos.", "Barbell_Curl"),
     ex("e51", "Curl de bíceps con mancuernas", "Bíceps", "Pesas", false, "Sube las mancuernas alternando o a la vez.", "Dumbbell_Bicep_Curl"),
     ex("e52", "Curl martillo", "Bíceps", "Pesas", false, "Palmas enfrentadas, sube las mancuernas.", "Hammer_Curls"),
@@ -326,8 +326,6 @@ const ejerciciosBase = [
     ex("e54", "Curl concentrado", "Bíceps", "Pesas", false, "Sentado, codo apoyado en el muslo, sube la mancuerna.", "Concentration_Curls"),
     ex("e55", "Curl en polea", "Bíceps", "Polea", false, "De pie frente a la polea baja, flexiona los codos.", "Standing_Bicep_Cable_Curl"),
     ex("e56", "Curl con goma", "Bíceps", "Gomas", false, "Pisa la goma y flexiona los codos.", "Standing_Bicep_Cable_Curl"),
-
-    // ================= TRÍCEPS =================
     ex("e57", "Extensión de tríceps en polea", "Tríceps", "Polea", false, "Empuja la cuerda o barra hacia abajo.", "Triceps_Pushdown"),
     ex("e58", "Extensión de tríceps sobre la cabeza", "Tríceps", "Pesas", false, "Sujeta una mancuerna con ambas manos y baja detrás de la nuca.", "Standing_Dumbbell_Triceps_Extension"),
     ex("e59", "Press francés", "Tríceps", "Pesas", false, "Tumbado, baja la barra hacia la frente.", "EZ-Bar_Skullcrusher"),
@@ -335,8 +333,6 @@ const ejerciciosBase = [
     ex("e61", "Fondos en banco", "Tríceps", "Peso corporal", false, "Manos en el banco, baja el cuerpo flexionando los codos.", "Bench_Dips"),
     ex("e62", "Fondos en paralelas (tríceps)", "Tríceps", "Peso corporal", true, "Cuerpo recto, baja flexionando los codos.", "Dips_-_Triceps_Version"),
     ex("e63", "Extensión de tríceps con goma", "Tríceps", "Gomas", false, "Goma fijada en alto, empuja hacia abajo.", "Band_Triceps_Extension"),
-
-    // ================= ABDOMINALES =================
     ex("e64", "Plancha frontal", "Abdominales", "Peso corporal", false, "Apoya antebrazos y puntas de pies, mantén el cuerpo recto.", "Plank"),
     ex("e65", "Plancha lateral", "Abdominales", "Peso corporal", false, "De lado, apoya antebrazo y mantén la cadera elevada.", "Side_Bridge"),
     ex("e66", "Crunch abdominal", "Abdominales", "Peso corporal", false, "Tumbado, sube los hombros del suelo.", "Crunches"),
@@ -346,8 +342,6 @@ const ejerciciosBase = [
     ex("e70", "Dead bug", "Abdominales", "Peso corporal", false, "Tumbado, extiende brazo y pierna opuestos.", "Dead_Bug"),
     ex("e71", "Rueda abdominal", "Abdominales", "Pesas", false, "De rodillas, rueda hacia adelante y vuelve.", "Ab_Roller"),
     ex("e72", "Crunch en polea alta", "Abdominales", "Polea", false, "De rodillas, flexiona el torso hacia abajo.", "Cable_Crunch"),
-
-    // ================= COMPUESTOS (FULL BODY) =================
     ex("e73", "Thruster (Sentadilla + Press)", "Compuestos", "Pesas", true, "Sentadilla y al subir empuja las mancuernas sobre la cabeza."),
     ex("e74", "Burpees", "Compuestos", "Peso corporal", true, "Flexión, salto y palmada arriba."),
     ex("e75", "Clean and Press", "Compuestos", "Pesas", true, "Sube la barra al pecho y luego empújala arriba."),
@@ -358,16 +352,12 @@ const ejerciciosBase = [
     ex("e80", "Renegade Row", "Compuestos", "Pesas", true, "En plancha con mancuernas, rema alternando brazos."),
     ex("e81", "Bear Crawl", "Compuestos", "Peso corporal", true, "Gatea manteniendo las rodillas cerca del suelo."),
     ex("e82", "Wall Balls", "Compuestos", "Pesas", true, "Sentadilla y lanza un balón medicinal a la pared."),
-
-    // ================= CARDIO / PLIOMETRÍA =================
     ex("e83", "Jumping Jacks", "Cardio", "Peso corporal", false, "Salta abriendo piernas y brazos."),
     ex("e84", "High Knees", "Cardio", "Peso corporal", false, "Corre en el sitio elevando las rodillas."),
     ex("e85", "Jump Squats", "Cardio", "Peso corporal", true, "Sentadilla y salto explosivo."),
     ex("e86", "Box Jumps", "Cardio", "Peso corporal", true, "Salta sobre un cajón."),
     ex("e87", "Saltar la cuerda", "Cardio", "Peso corporal", false, "Salta la cuerda a ritmo."),
     ex("e88", "Battle Ropes", "Cardio", "Pesas", false, "Ondula las cuerdas rápidamente."),
-
-    // ================= GOMAS (VARIADOS) =================
     ex("e89", "Sentadilla con goma", "Piernas", "Gomas", true, "Pisa la goma y sube contra resistencia."),
     ex("e90", "Peso muerto con goma", "Piernas", "Gomas", true, "Pisa la goma y estira la cadera."),
     ex("e91", "Press de pecho con goma", "Pecho", "Gomas", true, "Goma por la espalda, empuja al frente."),
@@ -382,37 +372,66 @@ const ejerciciosBase = [
 
 function obtenerEjercicios() { return [...ejerciciosBase.filter(e => !ejerciciosOcultos.includes(e.id)), ...misEjercicios]; }
 const GRUPOS_EJERCICIO = [
-    { nombre: "Todos", color: "#FF6B6B", filtro: "Todos" }, { nombre: "Compuestos", color: "#8B5CF6", filtro: "Compuestos" },
-    { nombre: "Pecho", color: "#EF4444", filtro: "Pecho" }, { nombre: "Espalda", color: "#3B82F6", filtro: "Espalda" },
-    { nombre: "Bíceps", color: "#EC4899", filtro: "Bíceps" }, { nombre: "Tríceps", color: "#F97316", filtro: "Tríceps" },
-    { nombre: "Hombros", color: "#F59E0B", filtro: "Hombros" }, { nombre: "Piernas", color: "#10B981", filtro: "Piernas" },
+    { nombre: "Compuestos", color: "#8B5CF6", filtro: "Compuestos" },
+    { nombre: "Pecho", color: "#EF4444", filtro: "Pecho" }, 
+    { nombre: "Espalda", color: "#3B82F6", filtro: "Espalda" },
+    { nombre: "Bíceps", color: "#EC4899", filtro: "Bíceps" }, 
+    { nombre: "Tríceps", color: "#F97316", filtro: "Tríceps" },
+    { nombre: "Hombros", color: "#F59E0B", filtro: "Hombros" }, 
+    { nombre: "Piernas", color: "#10B981", filtro: "Piernas" },
     { nombre: "Abdominales", color: "#14B8A6", filtro: "Abdominales" }
 ];
 
-function mostrarEjercicios(keepGrupo) {
-    grupoActual = keepGrupo || "";
+function mostrarEjercicios(grupoAbierto) {
     contenido.innerHTML = `
-        <span data-vista="ejercicios" hidden></span>
         <h2>Biblioteca de ejercicios</h2>
-        <div class="filtros-letras">${GRUPOS_EJERCICIO.map(g => `<button class="chip-ejercicio" style="border-color:${g.color}; color:${g.color};" onclick="filtrarGrupo('${g.filtro}')">${g.nombre}</button>`).join("")}</div>
-        <button class="boton-crear-ejercicio" onclick="mostrarFormularioEjercicio()" style="margin-top:10px;width:100%;background:#10B981;color:white;">+ Crear ejercicio</button>
-        <div id="listaEjercicios" style="margin-top:15px;"><div style="text-align:center;padding:20px;opacity:0.7;"><p>Pulsa un grupo para ver los ejercicios.</p></div></div>
+        <button class="boton-crear-ejercicio" onclick="mostrarFormularioEjercicio()" style="width:100%;background:#10B981;color:white;margin-bottom:15px;">+ Crear ejercicio</button>
+        <div id="acordeonEjercicios">
+            ${GRUPOS_EJERCICIO.map(g => `
+                <div style="margin-bottom:8px;">
+                    <button class="chip-ejercicio" style="width:100%; text-align:left; border-color:${g.color}; color:${g.color}; padding:12px; border-radius:10px; display:flex; justify-content:space-between; background:var(--bg-main);" onclick="toggleGrupoEjercicio('${g.filtro}', this)">
+                        ${g.nombre} <span>▸</span>
+                    </button>
+                    <div id="grupo-${g.filtro}" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid ${g.color};"></div>
+                </div>
+            `).join("")}
+        </div>
     `;
-    if (grupoActual !== "") {
-        filtrarBiblioteca();
-        const activo = document.querySelector(`.chip-ejercicio[onclick*="'${grupoActual}'"]`);
-        if (activo) activo.classList.add("activo");
-        restaurarScroll(); // <--- RESTAURA LA POSICIÓN
+    
+    if (grupoAbierto) {
+        const btn = document.querySelector(`button[onclick*="'${grupoAbierto}'"]`);
+        if (btn) toggleGrupoEjercicio(grupoAbierto, btn);
     }
 }
 
-function verDetalleEjercicio(id) {
-    guardarScroll(); // <--- GUARDA LA POSICIÓN
+function toggleGrupoEjercicio(grupo, btn) {
+    const div = document.getElementById(`grupo-${grupo}`);
+    if (!div) return;
+    
+    if (div.style.display === "block") {
+        div.style.display = "none";
+        btn.innerHTML = `${btn.innerText.replace('▾', '').trim()} <span>▸</span>`;
+    } else {
+        div.style.display = "block";
+        btn.innerHTML = `${btn.innerText.replace('▸', '').trim()} <span>▾</span>`;
+        
+        const ejercicios = obtenerEjercicios().filter(x => grupo === "Compuestos" ? x.grupo === "Compuestos" : (grupo.indexOf("eq:") === 0 ? x.equipo === grupo.slice(3) : x.grupo === grupo));
+        
+        div.innerHTML = ejercicios.length === 0 ? "<p>No hay ejercicios.</p>" : ejercicios.map(x => `
+            <div class="tarjeta-ejercicio" style="cursor:pointer; padding:10px; margin-bottom:5px; border:none; background:var(--bg-main);" onclick="verDetalleEjercicio('${x.id}', '${grupo}')">
+                <h3 style="font-size:14px; margin:0;">${escaparHTML(x.nombre)}</h3>
+            </div>
+        `).join("");
+    }
+}
+
+function verDetalleEjercicio(id, grupo) {
+    guardarScroll();
     const e = obtenerEjercicios().find(x => x.id === id); if (!e) return;
-    const grupoGuardado = grupoActual; 
     let htmlImg = e.img ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0;"><img src="${URL_IMG}${e.img}/images/0.jpg" style="width:100%;border-radius:12px;" loading="lazy"><img src="${URL_IMG}${e.img}/images/1.jpg" style="width:100%;border-radius:12px;" loading="lazy"></div>` : "";
+    
     contenido.innerHTML = `
-        <button class="boton-texto" onclick="mostrarEjercicios('${grupoGuardado}')" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
+        <button class="boton-texto" onclick="mostrarEjercicios('${grupo}')" style="color: var(--accent); font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
         <h2>${escaparHTML(e.nombre)}</h2>
         <div style="margin-bottom:10px;"><span class="etiqueta">${e.grupo}</span></div>
         ${htmlImg}
@@ -438,9 +457,12 @@ function filtrarBiblioteca() {
     `).join("");
 }
 
-function mostrarFormularioEjercicio() { contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarEjercicios()">◀ Volver</button><h2>Crear ejercicio</h2><label>Nombre</label><input type="text" id="nuevoNombre"><label>Grupo</label><select id="nuevoGrupo"><option value="Compuestos">Compuestos</option><option value="Pecho">Pecho</option><option value="Espalda">Espalda</option><option value="Bíceps">Bíceps</option><option value="Tríceps">Tríceps</option><option value="Hombros">Hombros</option><option value="Piernas">Piernas</option><option value="Abdominales">Abdominales</option></select><label>Equipo</label><select id="nuevoEquipo"><option value="Pesas">Pesas</option><option value="Gomas">Gomas</option><option value="Peso corporal">Peso corporal</option></select><label>Descripción</label><textarea id="nuevaDescripcion"></textarea><button onclick="guardarNuevoEjercicio()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; }
-function guardarNuevoEjercicio() { const n = document.getElementById("nuevoNombre").value.trim(); if (!n) { alert("Falta nombre."); return; } misEjercicios.push({ id: generarId(), nombre: n, grupo: document.getElementById("nuevoGrupo").value, equipo: document.getElementById("nuevoEquipo").value, descripcion: document.getElementById("nuevaDescripcion").value.trim(), img: "" }); guardarDatos(); volverAtras(); }
-function eliminarEjercicio(id) { confirmar("¿Eliminar este ejercicio?", () => { misEjercicios = misEjercicios.filter(e => e.id !== id); guardarDatos(); mostrarEjercicios(); }); }
+function mostrarFormularioEjercicio() { 
+    guardarScroll();
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarEjercicios('${grupoActual}')">◀ Volver</button><h2>Crear ejercicio</h2><label>Nombre</label><input type="text" id="nuevoNombre"><label>Grupo</label><select id="nuevoGrupo"><option value="Compuestos">Compuestos</option><option value="Pecho">Pecho</option><option value="Espalda">Espalda</option><option value="Bíceps">Bíceps</option><option value="Tríceps">Tríceps</option><option value="Hombros">Hombros</option><option value="Piernas">Piernas</option><option value="Abdominales">Abdominales</option></select><label>Equipo</label><select id="nuevoEquipo"><option value="Pesas">Pesas</option><option value="Gomas">Gomas</option><option value="Peso corporal">Peso corporal</option></select><label>Descripción</label><textarea id="nuevaDescripcion"></textarea><button onclick="guardarNuevoEjercicio()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; 
+}
+function guardarNuevoEjercicio() { const n = document.getElementById("nuevoNombre").value.trim(); if (!n) { alert("Falta nombre."); return; } misEjercicios.push({ id: generarId(), nombre: n, grupo: document.getElementById("nuevoGrupo").value, equipo: document.getElementById("nuevoEquipo").value, descripcion: document.getElementById("nuevaDescripcion").value.trim(), img: "" }); guardarDatos(); mostrarEjercicios(grupoActual); }
+function eliminarEjercicio(id) { confirmar("¿Eliminar este ejercicio?", () => { misEjercicios = misEjercicios.filter(e => e.id !== id); guardarDatos(); mostrarEjercicios(grupoActual); }); }
 
 /* =====================================================
    RUTINAS Y PLANTILLAS
@@ -454,7 +476,12 @@ const plantillasRutinas = [
     { nombre: "Pierna", descripcion: "Pierna y glúteo.", ejercicios: [["e25", 4, 8], ["e29", 3, 12], ["e31", 3, 10], ["e35", 4, 15]] }
 ];
 
+function mostrarRutinas() {
+    contenido.innerHTML = `<h2>Mis rutinas</h2><button onclick="mostrarFormularioRutina()" style="width:100%;">+ Crear rutina</button><button onclick="mostrarPlantillas()" style="width:100%; margin-top:10px; background:#F59E0B;">📋 Plantillas</button><div id="listaRutinas" style="margin-top: 15px;">${rutinas.length === 0 ? "<p>No hay rutinas.</p>" : rutinas.map((r, i) => `<div class="tarjeta-rutina" style="cursor:pointer; display:flex; justify-content:space-between;" onclick="verRutina(${i})"><h3 style="margin:0;">${escaparHTML(r.nombre)}</h3><span>▸</span></div>`).join("")}</div>`;
+    restaurarScroll();
+}
 function mostrarPlantillas() {
+    guardarScroll();
     contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarRutinas()">◀ Volver</button><h2>Plantillas</h2><p>Elige una y ajusta series/reps.</p>${plantillasRutinas.map((p, i) => `<div class="tarjeta-rutina" style="cursor:pointer; display:flex; justify-content:space-between;" onclick="elegirPlantilla(${i})"><div><h3 style="margin:0;">${escaparHTML(p.nombre)}</h3><p style="margin:5px 0 0 0; font-size:12px;">${escaparHTML(p.descripcion)}</p></div><span>${p.ejercicios.length} ej. ▸</span></div>`).join("")}`;
 }
 function elegirPlantilla(i) {
@@ -463,24 +490,36 @@ function elegirPlantilla(i) {
     rutinas.push({ id: generarId(), nombre: p.nombre, ejercicios: ejercicios });
     guardarDatos(); aviso("Rutina creada desde plantilla."); mostrarRutinas();
 }
-function mostrarFormularioRutina() { contenido.innerHTML = `<h2>Crear rutina</h2><label>Nombre</label><input type="text" id="nombreRutina"><button onclick="crearRutina()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; }
-function crearRutina() { const n = document.getElementById("nombreRutina").value.trim(); if (!n) return; rutinas.push({ id: generarId(), nombre: n, ejercicios: [] }); guardarDatos(); volverAtras(); }
-
-function mostrarRutinas() {
-    contenido.innerHTML = `<span data-vista="rutinas" hidden></span><h2>Mis rutinas</h2><button onclick="mostrarFormularioRutina()" style="width:100%;">+ Crear rutina</button><button onclick="mostrarPlantillas()" style="width:100%; margin-top:10px; background:#F59E0B;">📋 Plantillas</button><div id="listaRutinas" style="margin-top: 15px;">${rutinas.length === 0 ? "<p>No hay rutinas.</p>" : rutinas.map((r, i) => `<div class="tarjeta-rutina" style="cursor:pointer; display:flex; justify-content:space-between;" onclick="verRutina(${i})"><h3 style="margin:0;">${escaparHTML(r.nombre)}</h3><span>▸</span></div>`).join("")}</div>`;
-    restaurarScroll(); // <--- RESTAURA LA POSICIÓN
+function mostrarFormularioRutina() { 
+    guardarScroll();
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarRutinas()">◀ Volver</button><h2>Crear rutina</h2><label>Nombre</label><input type="text" id="nombreRutina"><button onclick="crearRutina()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; 
 }
-
+function crearRutina() { const n = document.getElementById("nombreRutina").value.trim(); if (!n) return; rutinas.push({ id: generarId(), nombre: n, ejercicios: [] }); guardarDatos(); mostrarRutinas(); }
 function verRutina(i) {
-    guardarScroll(); // <--- GUARDA LA POSICIÓN
+    guardarScroll();
     const r = rutinas[i]; if (!r) return;
-    let html = `<button class="boton-texto" onclick="mostrarRutinas()" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${escaparHTML(r.nombre)}</h2><label>Nombre</label><input type="text" id="rutNombre" value="${escaparHTML(r.nombre)}"><div id="ejerciciosDeRutina">`;
+    let html = `<button class="boton-texto" onclick="mostrarRutinas()" style="color: var(--accent); font-size: 16px; margin-bottom: 15px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${escaparHTML(r.nombre)}</h2><label>Nombre</label><input type="text" id="rutNombre" value="${escaparHTML(r.nombre)}"><div id="ejerciciosDeRutina" style="margin-top:15px;">`;
+    
     if (r.ejercicios.length === 0) html += "<p>Sin ejercicios.</p>";
     else r.ejercicios.forEach((item, pos) => {
         const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
-        html += `<div class="tarjeta-rutina"><h3>${escaparHTML(e.nombre)}</h3><div style="display:flex; gap:10px;"><div style="flex:1;"><label>Series</label><input type="number" id="rutS_${pos}" value="${item.series}"></div><div style="flex:1;"><label>Reps</label><input type="number" id="rutR_${pos}" value="${item.repeticiones}"></div></div><button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${pos})">🗑 Quitar</button></div>`;
+        html += `
+            <div class="tarjeta-rutina" style="padding: 8px 12px; margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 13px; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px;">${escaparHTML(e.nombre)}</h3>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <input type="number" id="rutS_${pos}" value="${item.series}" style="width: 35px; padding: 4px; text-align: center; margin: 0; font-size: 13px;">
+                    <span style="color: var(--text-muted); font-size: 12px;">x</span>
+                    <input type="number" id="rutR_${pos}" value="${item.repeticiones}" style="width: 35px; padding: 4px; text-align: center; margin: 0; font-size: 13px;">
+                </div>
+                <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${pos})" style="padding: 5px; margin: 0 0 0 10px;">🗑</button>
+            </div>
+        `;
     });
-    html += `</div><button style="width:100%;margin-top:15px;background:#3B82F6;" onclick="guardarEdicionRutina(${i}, 'selector')">+ Añadir ejercicio</button><button style="width:100%;margin-top:10px;background:#10B981;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button><button style="width:100%;margin-top:10px;background:#FF6B6B;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button><button class="boton-borrar" style="width:100%;margin-top:10px; background:#EF4444; color:white; border-radius:var(--radio);" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
+    html += `</div>
+        <button style="width:100%;margin-top:15px;background:#3B82F6;" onclick="guardarEdicionRutina(${i}, 'selector')">+ Añadir ejercicio</button>
+        <button style="width:100%;margin-top:10px;background:#10B981;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button>
+        <button style="width:100%;margin-top:10px;background:#FF6B6B;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button>
+        <button class="boton-borrar" style="width:100%;margin-top:10px; background:#EF4444; color:white; border-radius:var(--radio);" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
     contenido.innerHTML = html;
 }
 
@@ -489,98 +528,157 @@ function guardarEdicionRutina(i, destino) {
     r.nombre = c.value.trim() || r.nombre;
     for (let p = 0; p < r.ejercicios.length; p++) { const s = document.getElementById("rutS_" + p); const rp = document.getElementById("rutR_" + p); if (s && rp) { r.ejercicios[p].series = parseInt(s.value) || 1; r.ejercicios[p].repeticiones = parseInt(rp.value) || 1; } }
     guardarDatos();
-    if (destino === "selector") mostrarSelectorEjercicios(i); else if (destino === "entrenar") iniciarEntrenamientoEnVivo(i); else volverAtras();
+    if (destino === "selector") mostrarSelectorEjercicios(i); else if (destino === "entrenar") iniciarEntrenamientoEnVivo(i); else mostrarRutinas();
 }
-function mostrarSelectorEjercicios(i) { contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="verRutina(${i})">◀ Volver</button><h2>Añadir ejercicio</h2><input type="text" id="buscadorRutina" placeholder="Buscar..." oninput="filtrarEjerciciosParaRutina(${i})"><div id="selectorEjercicios"></div>`; filtrarEjerciciosParaRutina(i); }
+function mostrarSelectorEjercicios(i) { 
+    guardarScroll();
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="verRutina(${i})">◀ Volver</button><h2>Añadir ejercicio</h2><input type="text" id="buscadorRutina" placeholder="Buscar..." oninput="filtrarEjerciciosParaRutina(${i})"><div id="selectorEjercicios"></div>`; 
+    filtrarEjerciciosParaRutina(i); 
+}
 function filtrarEjerciciosParaRutina(i) { const l = document.getElementById("selectorEjercicios"); if (!l) return; const t = document.getElementById("buscadorRutina").value.toLowerCase(); l.innerHTML = obtenerEjercicios().filter(x => x.nombre.toLowerCase().includes(t)).map(x => `<div class="tarjeta-rutina" style="cursor:pointer;" onclick="añadirEjercicioARutina(${i}, '${x.id}')"><h3>${escaparHTML(x.nombre)}</h3></div>`).join(""); }
 function añadirEjercicioARutina(i, idE) { rutinas[i].ejercicios.push({ ejercicioId: idE, series: 3, repeticiones: 10 }); guardarDatos(); verRutina(i); }
 function eliminarEjercicioRutina(i, pos) { rutinas[i].ejercicios.splice(pos, 1); guardarDatos(); verRutina(i); }
-function eliminarRutina(i) { confirmar("¿Eliminar rutina?", () => { rutinas.splice(i, 1); guardarDatos(); volverAtras(); }); }
+function eliminarRutina(i) { confirmar("¿Eliminar rutina?", () => { rutinas.splice(i, 1); guardarDatos(); mostrarRutinas(); }); }
 
 function iniciarEntrenamientoEnVivo(i) {
     const r = rutinas[i]; if (!r) return;
-    let html = `<h2>${escaparHTML(r.nombre)}</h2><div class="reloj reloj-compacto"><div id="tiempo" style="font-size:36px;">00:00</div><div class="grid-opciones-descanso"><button onclick="cronoDescanso(60)">60s</button><button onclick="cronoDescanso(90)">90s</button></div></div>`;
+    let html = `
+        <h2>${escaparHTML(r.nombre)}</h2>
+        <div class="reloj reloj-compacto" style="padding: 12px; margin-bottom: 12px;">
+            <div id="tiempo" style="font-size:36px; margin: 5px 0;">00:00</div>
+            <div class="grid-opciones-descanso" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;">
+                <button onclick="cronoDescanso(30)">30s</button>
+                <button onclick="cronoDescanso(45)">45s</button>
+                <button onclick="cronoDescanso(60)">60s</button>
+                <button onclick="cronoDescanso(90)">90s</button>
+            </div>
+        </div>
+    `;
+    
     r.ejercicios.forEach((item, idx) => {
         const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
-        html += `<div class="tarjeta-rutina"><h3>${escaparHTML(e.nombre)}</h3><table style="width:100%; text-align:center; margin-top:10px;"><tr><th>Serie</th><th>Reps</th></tr>`;
-        for (let s = 1; s <= item.series; s++) html += `<tr><td>#${s}</td><td><input type="number" id="reps_${idx}_${s}" value="${item.repeticiones}" style="width:70px; text-align:center;"></td></tr>`;
-        html += `</table></div>`;
+        
+        let inputsSeries = "";
+        for (let s = 1; s <= item.series; s++) {
+            inputsSeries += `
+                <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 5px;">
+                    <span style="font-size: 11px; color: var(--text-muted);">#${s}</span>
+                    <input type="number" id="reps_${idx}_${s}" value="${item.repeticiones}" style="width: 40px; padding: 2px; margin: 0; text-align: center; font-size: 13px; border: none; background: transparent;">
+                </div>
+            `;
+        }
+
+        html += `
+            <div class="tarjeta-rutina" style="padding: 10px 12px; margin-top: 8px;">
+                <h3 style="font-size: 14px; margin: 0 0 8px 0;">${escaparHTML(e.nombre)}</h3>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    ${inputsSeries}
+                </div>
+            </div>
+        `;
     });
-    html += `<button style="width:100%;margin-top:20px;min-height:55px;background:#10B981;color:#fff;" onclick="finalizarEntrenamientoEnVivo(${i})">✔ Finalizar y Guardar</button>`;
+    
+    html += `<button style="width:100%;margin-top:15px;min-height:50px;background:#10B981;color:#fff;" onclick="finalizarEntrenamientoEnVivo(${i})">✔ Finalizar y Guardar</button>`;
     contenido.innerHTML = html;
     actualizarVistaCronometro();
 }
+
 function finalizarEntrenamientoEnVivo(i) {
     const r = rutinas[i]; const detalle = []; let tS = 0, tR = 0;
-    r.ejercicios.forEach((item, idx) => { const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return; const series = []; for (let s = 1; s <= item.series; s++) { const inp = document.getElementById(`reps_${idx}_${s}`); const reps = parseInt(inp ? inp.value : 0) || 0; series.push({ reps }); tS++; tR += reps; } detalle.push({ ejercicioId: item.ejercicioId, nombre: e.nombre, series }); });
+    r.ejercicios.forEach((item, idx) => { 
+        const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return; 
+        const series = []; 
+        for (let s = 1; s <= item.series; s++) { 
+            const inp = document.getElementById(`reps_${idx}_${s}`); 
+            const reps = parseInt(inp ? inp.value : 0) || 0; 
+            series.push({ reps }); 
+            tS++; 
+            tR += reps; 
+        } 
+        detalle.push({ ejercicioId: item.ejercicioId, nombre: e.nombre, series }); 
+    });
+    
     historial.push({ id: generarId(), fecha: obtenerFechaActual(), rutina: r.nombre, ejercicios: detalle.length, series: tS, repeticiones: tR, detalle });
-    guardarDatos(); aviso(`¡Guardado!`); mostrarCalendario();
+    guardarDatos(); 
+    aviso(`¡Guardado!`); 
+    
+    // AQUÍ ESTÁ EL CAMBIO: Vuelve a la lista de rutinas
+    mostrarRutinas(); 
 }
 
 /* =====================================================
    PROGRESO CORPORAL
 ===================================================== */
-const camposCuerpo = [{ clave: "peso", nombre: "Peso", unidad: "kg" }, { clave: "cintura", nombre: "Cintura", unidad: "cm" }, { clave: "pecho", nombre: "Pecho", unidad: "cm" }, { clave: "cadera", nombre: "Cadera", unidad: "cm" }];
+const camposCuerpo = [{ clave: "peso", nombre: "Peso", unidad: "kg" }];
 function calcularIMC(p) { if (!alturaCm || !p) return null; return p / Math.pow(alturaCm / 100, 2); }
 function obtenerUltimoPeso() { const s = medidasCuerpo.slice().sort((a, b) => a.fecha.localeCompare(b.fecha)); for (let i = s.length - 1; i >= 0; i--) { if (s[i].peso) return { valor: s[i].peso, fecha: s[i].fecha }; } return null; }
 
 function mostrarProgreso() {
-    const uP = obtenerUltimoPeso(); const imc = uP ? calcularIMC(uP.valor) : null;
-    const cinturas = medidasCuerpo.filter(r => r.cintura).sort((a,b) => a.fecha.localeCompare(b.fecha));
-    const uC = cinturas.length ? cinturas[cinturas.length - 1].cintura : null;
-    const ica = (uC && alturaCm) ? uC / alturaCm : null;
+    const uP = obtenerUltimoPeso(); 
+    const imc = uP ? calcularIMC(uP.valor) : null;
 
-    const periodos = [[30, "1 mes"], [90, "3 meses"], [180, "6 meses"], [0, "Todo"]];
-    const metrics = [camposCuerpo[0], { clave: "imc", nombre: "IMC", unidad: "" }, ...camposCuerpo.slice(1)];
-    const selPeriodos = periodos.map(p => `<button class="chip chip-tiempo ${p[0] === periodoActual ? "activo" : ""}" onclick="elegirPeriodo(${p[0]})">${p[1]}</button>`).join("");
-    const selMetricas = metrics.map(m => `<button class="chip chip-medida ${m.clave === metricaActual ? "activo" : ""}" onclick="elegirMetrica('${m.clave}')">${m.nombre}</button>`).join("");
+    const selMetricas = `<button class="chip chip-medida activo">Peso</button>`;
 
-    let serie = medidasCuerpo.map(r => ({ fecha: r.fecha, valor: metricaActual === "imc" ? calcularIMC(r.peso) : r[metricaActual] })).filter(p => p.valor).sort((a,b) => a.fecha.localeCompare(b.fecha));
-    if (periodoActual > 0) { const limite = new Date(); limite.setDate(limite.getDate() - periodoActual); serie = serie.filter(x => x.fecha >= fechaATexto(limite)); }
+    let serie = medidasCuerpo.map(r => ({ fecha: r.fecha, valor: r.peso })).filter(p => p.valor).sort((a,b) => a.fecha.localeCompare(b.fecha));
     let graficaHTML = "<p>Sin registros.</p>";
+    
     if (serie.length >= 2) {
-        const W = 320, H = 210, izq = 40, der = 14, arr = 18, aba = 30;
+        const W = 320, H = 150, izq = 30, der = 10, arr = 20, aba = 20;
         let min = Math.min(...serie.map(v => v.valor)); let max = Math.max(...serie.map(v => v.valor));
         if (min === max) { min -= 1; max += 1; }
-        const marg = (max - min) * 0.15; min -= marg; max += marg;
+        const marg = (max - min) * 0.2; min -= marg; max += marg;
         const t0 = textoAFecha(serie[0].fecha).getTime(); const t1 = textoAFecha(serie[serie.length - 1].fecha).getTime();
         const xD = f => serie.length === 1 || t1 === t0 ? izq + (W - izq - der) / 2 : izq + ((textoAFecha(f).getTime() - t0) / (t1 - t0)) * (W - izq - der);
         const yD = val => arr + (1 - (val - min) / (max - min)) * (H - arr - aba);
-        let rej = "", line = "", circ = "";
-        for (let i = 0; i <= 3; i++) { const val = min + ((max - min) * i) / 3; const y = yD(val); rej += `<line class="grafica-rejilla" x1="${izq}" y1="${y.toFixed(1)}" x2="${W - der}" y2="${y.toFixed(1)}"/><text class="grafica-texto" x="${izq - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${formatoNum(val, (max - min) > 10 ? 0 : 1)}</text>`; }
-        const coords = serie.map(x => ({ x: xD(x.fecha), y: yD(x.valor), valor: x.valor, fecha: x.fecha }));
-        if (coords.length > 1) line = `<polyline class="grafica-linea" points="${coords.map(c => c.x.toFixed(1) + "," + c.y.toFixed(1)).join(" ")}"/>`;
-        circ = coords.map(c => `<circle class="grafica-punto" cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4"/>`).join("");
-        graficaHTML = `<div class="caja-grafica"><svg class="grafica" viewBox="0 0 ${W} ${H}">${rej}${line}${circ}</svg></div>`;
+        
+        let line = "", circ = "";
+        const coords = serie.map(x => ({ x: xD(x.fecha), y: yD(x.valor), valor: x.valor }));
+        line = `<polyline points="${coords.map(c => c.x.toFixed(1) + "," + c.y.toFixed(1)).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="3"/>`;
+        circ = coords.map(c => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="var(--accent)"/><text x="${c.x.toFixed(1)}" y="${(c.y - 8).toFixed(1)}" font-size="10" fill="var(--text-main)" text-anchor="middle">${formatoNum(c.valor)}</text>`).join("");
+        
+        graficaHTML = `<div class="caja-grafica" style="padding:10px 0;"><svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">${line}${circ}</svg></div>`;
     }
 
     contenido.innerHTML = `
-        <span data-vista="progreso" hidden></span><h2>Progreso</h2>
-        <button onclick="mostrarFormularioCuerpo()" style="width:100%; background:#F59E0B; margin-bottom:15px;">+ Añadir registro</button>
+        <h2>Progreso</h2>
+        <button onclick="mostrarFormularioCuerpo()" style="width:100%; background:var(--accent); color:white; margin-bottom:15px; border:none;">+ Añadir registro</button>
         
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:15px;"><h3 style="font-size:24px; color:#F59E0B; margin:0;">${uP ? formatoNum(uP.valor) : "-"}</h3><span>Peso (kg)</span></div>
-            <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:15px;"><h3 style="font-size:24px; color:#F59E0B; margin:0;">${imc ? formatoNum(imc) : "-"}</h3><span>IMC</span></div>
-            <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:15px;"><h3 style="font-size:24px; color:#F59E0B; margin:0;">${uC ? formatoNum(uC) : "-"}</h3><span>Cintura (cm)</span></div>
-            <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:15px;"><h3 style="font-size:24px; color:#F59E0B; margin:0;">${ica ? formatoNum(ica, 2) : "-"}</h3><span>Cintura/altura</span></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
+            <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:10px;"><h3 style="font-size:20px; color:var(--accent); margin:0;">${uP ? formatoNum(uP.valor) : "-"}</h3><span style="font-size:11px;">Peso (kg)</span></div>
+            <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:10px;"><h3 style="font-size:20px; color:var(--accent); margin:0;">${imc ? formatoNum(imc) : "-"}</h3><span style="font-size:11px;">IMC</span></div>
+            <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:10px; cursor:pointer;" onclick="mostrarFormularioAltura()"><h3 style="font-size:20px; color:var(--accent); margin:0;">${alturaCm ? formatoNum(alturaCm) : "-"}</h3><span style="font-size:11px;">Altura (cm)</span></div>
         </div>
-        <div class="tarjeta-rutina" style="text-align:center; padding:15px; margin-bottom:15px; cursor:pointer;" onclick="mostrarFormularioAltura()"><h3 style="font-size:24px; color:#F59E0B; margin:0;">${alturaCm ? formatoNum(alturaCm) : "-"}</h3><span>Altura (cm)</span></div>
 
         <h3>📈 Evolución</h3>
-        <p class="titulo-chips">⏱ Periodo</p><div class="selector-chips">${selPeriodos}</div>
-        <p class="titulo-chips">📏 Medida</p><div class="selector-chips">${selMetricas}</div>
+        <div class="selector-chips">${selMetricas}</div>
         ${graficaHTML}
 
-        <h3>Registros</h3>
-        ${medidasCuerpo.slice().reverse().map(r => `<div class="tarjeta-rutina"><h3>${formatearFecha(r.fecha)}</h3><p>${camposCuerpo.filter(c => r[c.clave]).map(c => `${c.nombre}: ${r[c.clave]}${c.unidad}`).join(" · ")}</p><button class="boton-texto texto-rojo" onclick="eliminarRegistroCuerpo('${r.id}')">🗑 Eliminar</button></div>`).join("")}
+               <h3 style="margin-top:20px;">Registros</h3>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+            ${medidasCuerpo.slice().reverse().map(r => `
+                <div class="item-mini" style="padding:10px 15px; margin-bottom:0; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:13px; color:var(--text-muted);">${formatearFecha(r.fecha)}</span>
+                    <strong style="font-size:14px; color:var(--text-main);">${formatoNum(r.peso)} kg</strong>
+                    <button class="btn-mini-accion" style="color:#EF4444; padding:4px 8px;" onclick="eliminarRegistroCuerpo('${r.id}')">🗑</button>
+                </div>
+            `).join("")}
+        </div>
     `;
+    restaurarScroll();
 }
-function elegirPeriodo(d) { periodoActual = d; mostrarProgreso(); }
+
 function elegirMetrica(c) { metricaActual = c; mostrarProgreso(); }
-function mostrarFormularioCuerpo() { const c = camposCuerpo.map(x => `<label>${x.nombre} (${x.unidad})</label><input type="number" step="0.1" id="cuerpo_${x.clave}">`).join(""); contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarProgreso()">◀ Volver</button><h2>Nuevo registro</h2><label>Fecha</label><input type="date" id="cuerpo_fecha" value="${obtenerFechaActual()}">${c}<button onclick="guardarRegistroCuerpo()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; }
-function guardarRegistroCuerpo() { const f = document.getElementById("cuerpo_fecha").value; const v = {}; let a = false; camposCuerpo.forEach(c => { const n = parseFloat(document.getElementById("cuerpo_" + c.clave).value); if (n > 0) { v[c.clave] = n; a = true; } }); if (!a) { alert("Rellena algo."); return; } const ex = medidasCuerpo.find(r => r.fecha === f); if (ex) Object.assign(ex, v); else medidasCuerpo.push(Object.assign({ id: generarId(), fecha: f }, v)); guardarDatos(); volverAtras(); }
+function mostrarFormularioCuerpo() { 
+    guardarScroll();
+    const c = camposCuerpo.map(x => `<label>${x.nombre} (${x.unidad})</label><input type="number" step="0.1" id="cuerpo_${x.clave}">`).join(""); 
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarProgreso()">◀ Volver</button><h2>Nuevo registro</h2><label>Fecha</label><input type="date" id="cuerpo_fecha" value="${obtenerFechaActual()}">${c}<button onclick="guardarRegistroCuerpo()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; 
+}
+function guardarRegistroCuerpo() { const f = document.getElementById("cuerpo_fecha").value; const v = {}; let a = false; camposCuerpo.forEach(c => { const n = parseFloat(document.getElementById("cuerpo_" + c.clave).value); if (n > 0) { v[c.clave] = n; a = true; } }); if (!a) { alert("Rellena algo."); return; } const ex = medidasCuerpo.find(r => r.fecha === f); if (ex) Object.assign(ex, v); else medidasCuerpo.push(Object.assign({ id: generarId(), fecha: f }, v)); guardarDatos(); mostrarProgreso(); }
 function eliminarRegistroCuerpo(id) { confirmar("¿Eliminar?", () => { medidasCuerpo = medidasCuerpo.filter(r => r.id !== id); guardarDatos(); mostrarProgreso(); }); }
-function mostrarFormularioAltura() { contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarProgreso()">◀ Volver</button><h2>Altura</h2><label>Altura en cm</label><input type="number" id="inputAltura" value="${alturaCm || ""}"><button onclick="guardarAltura()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; }
+function mostrarFormularioAltura() { 
+    guardarScroll();
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarProgreso()">◀ Volver</button><h2>Altura</h2><label>Altura en cm</label><input type="number" id="inputAltura" value="${alturaCm || ""}"><button onclick="guardarAltura()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; 
+}
 function guardarAltura() { const v = parseFloat(document.getElementById("inputAltura").value); if (!(v >= 100 && v <= 250)) { aviso("Entre 100 y 250 cm."); return; } alturaCm = v; guardarDatos(); mostrarProgreso(); }
 
 /* =====================================================
@@ -588,15 +686,34 @@ function guardarAltura() { const v = parseFloat(document.getElementById("inputAl
 ===================================================== */
 function mostrarCronometro() {
     contenido.innerHTML = `
-        <span data-vista="cronometro" hidden></span><h2>Cronómetro</h2>
-        <div class="reloj" id="relojNormal">
-            <p id="etiquetaCrono" style="margin:0 0 10px 0;">Parado</p><div id="tiempo">00:00</div>
-            <div class="botones-reloj"><button class="boton-iniciar" onclick="cronoIniciar()">Iniciar</button><button class="boton-pausar" onclick="cronoParar()">Parar</button><button onclick="cronoReiniciar()" style="grid-column:1/-1;">Reiniciar</button></div>
-            <div style="margin-top:20px;"><h3>Descanso</h3><div class="grid-opciones-descanso"><button onclick="cronoDescanso(30)">30s</button><button onclick="cronoDescanso(45)">45s</button><button onclick="cronoDescanso(60)">60s</button><button onclick="cronoDescanso(90)">90s</button></div></div>
+        <h2>Cronómetro</h2>
+        <div class="selector-chips" style="margin-bottom:15px;">
+            <button class="chip activo" onclick="cambiarModoCrono('normal', this)">Normal</button>
+            <button class="chip" onclick="cambiarModoCrono('circuito', this)">Circuito (HIIT)</button>
         </div>
-        <div class="reloj" id="relojCircuito" style="margin-top:20px;">
-            <h3>⏱️ Circuito (HIIT / EMOM)</h3>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+        
+        <div id="cronoNormal" class="reloj" style="padding: 15px;">
+            <p id="etiquetaCrono" style="margin:0 0 5px 0; font-size:14px;">Parado</p>
+            <div id="tiempo" style="margin: 5px 0;">00:00</div>
+            <div class="botones-reloj" style="gap:6px; margin-top:10px;">
+                <button class="boton-iniciar" onclick="cronoIniciar()">Iniciar</button>
+                <button class="boton-pausar" onclick="cronoParar()">Parar</button>
+                <button onclick="cronoReiniciar()" style="grid-column:1/-1;">Reiniciar</button>
+            </div>
+            <div style="margin-top:15px;">
+                <h3 style="font-size:14px; margin-bottom:8px;">Descanso</h3>
+                <div class="grid-opciones-descanso" style="gap:6px;">
+                    <button onclick="cronoDescanso(30)">30s</button>
+                    <button onclick="cronoDescanso(45)">45s</button>
+                    <button onclick="cronoDescanso(60)">60s</button>
+                    <button onclick="cronoDescanso(90)">90s</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="cronoCircuito" class="reloj" style="display:none; padding: 15px;">
+            <h3>⏱️ Configurar Circuito</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
                 <div><label>Trabajo (s)</label><input type="number" id="circTrabajo" value="40"></div>
                 <div><label>Descanso (s)</label><input type="number" id="circDescanso" value="20"></div>
                 <div style="grid-column:1/-1;"><label>Rondas</label><input type="number" id="circRondas" value="5"></div>
@@ -607,14 +724,27 @@ function mostrarCronometro() {
     `;
     actualizarVistaCronometro();
 }
+
+function cambiarModoCrono(modo, btn) {
+    document.querySelectorAll('.selector-chips button').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    if(modo === 'normal') {
+        document.getElementById('cronoNormal').style.display = 'block';
+        document.getElementById('cronoCircuito').style.display = 'none';
+    } else {
+        document.getElementById('cronoNormal').style.display = 'none';
+        document.getElementById('cronoCircuito').style.display = 'block';
+    }
+}
+
 function cronoMsActual() { return cronoModo === "subida" ? cronoMs + (Date.now() - cronoInicio) : cronoMs; }
 function cronoIniciar() { if (cronoModo === "subida") return; clearInterval(cronoIntervalo); if (cronoModo === "bajada") cronoMs = 0; cronoModo = "subida"; cronoColor = "verde"; cronoInicio = Date.now(); cronoIntervalo = setInterval(actualizarVistaCronometro, 250); actualizarVistaCronometro(); }
 function cronoParar() { if (cronoModo === "subida") cronoMs += Date.now() - cronoInicio; else if (cronoModo === "bajada") cronoMs = 0; cronoModo = "parado"; cronoColor = "rojo"; clearInterval(cronoIntervalo); actualizarVistaCronometro(); }
 function cronoReiniciar() { clearInterval(cronoIntervalo); cronoModo = "parado"; cronoColor = ""; cronoMs = 0; actualizarVistaCronometro(); }
-function cronoDescanso(s) { clearInterval(cronoIntervalo); cronoMs = 0; cronoModo = "bajada"; cronoColor = "naranja"; cronoFin = Date.now() + s * 1000; cronoIntervalo = setInterval(actualizarVistaCronometro, 250); actualizarVistaCronometro(); }
+function cronoDescanso(s) { clearInterval(cronoIntervalo); cronoMs = 0; cronoModo = "bajada"; cronoColor = "azul"; cronoFin = Date.now() + s * 1000; cronoIntervalo = setInterval(actualizarVistaCronometro, 250); actualizarVistaCronometro(); }
 function finDescanso() { clearInterval(cronoIntervalo); cronoModo = "parado"; cronoColor = ""; cronoMs = 0; actualizarVistaCronometro(); if (navigator.vibrate) navigator.vibrate([300, 150, 300]); aviso("⏱ ¡Descanso terminado!"); }
 function actualizarVistaCronometro() {
-    document.querySelectorAll(".reloj").forEach(c => { c.classList.remove("brillo-verde", "brillo-rojo", "brillo-naranja"); if (cronoColor && c.id !== "relojCircuito") c.classList.add("brillo-" + cronoColor); });
+    document.querySelectorAll(".reloj").forEach(c => { c.classList.remove("brillo-verde", "brillo-rojo", "brillo-azul"); if (cronoColor && c.id !== "relojCircuito") c.classList.add("brillo-" + cronoColor); });
     let s; if (cronoModo === "bajada") { const r = Math.ceil((cronoFin - Date.now()) / 1000); if (r <= 0) { finDescanso(); return; } s = r; } else s = Math.floor(cronoMsActual() / 1000);
     const t = document.getElementById("tiempo"); if (t) t.innerText = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
     const e = document.getElementById("etiquetaCrono"); if (e) e.innerText = cronoModo === "bajada" ? "Descansando…" : (cronoModo === "subida" ? "En marcha" : "Parado");
@@ -622,12 +752,12 @@ function actualizarVistaCronometro() {
 
 let circIntervalo = null, circConfig = { trabajo: 40, descanso: 20, rondas: 5 }, circEstado = { ronda: 1, fase: 'trabajo', tiempo: 0 }, circPausado = false;
 function iniciarCircuito() {
-    const reloj = document.getElementById("relojCircuito");
+    const reloj = document.getElementById("cronoCircuito");
     const divBotones = document.getElementById("circBotones");
     if (circIntervalo && !circPausado) { 
         clearInterval(circIntervalo); circIntervalo = null; circPausado = true; 
         divBotones.innerHTML = `<button class="boton-iniciar" onclick="iniciarCircuito()" style="margin-top:15px;width:48%;">▶ Reanudar</button><button class="boton-pausar" onclick="detenerCircuito()" style="margin-top:15px;width:48%; float:right;">⏹ Terminar</button>`;
-        reloj.className = "reloj brillo-naranja"; return; 
+        reloj.className = "reloj brillo-azul"; return; 
     }
     if (circPausado) { 
         circPausado = false; divBotones.innerHTML = `<button id="btnCircuito" class="boton-pausar" onclick="iniciarCircuito()" style="margin-top:15px;width:100%;">⏸ Pausar</button>`;
@@ -643,7 +773,7 @@ function detenerCircuito() {
     clearInterval(circIntervalo); circIntervalo = null; circPausado = false;
     document.getElementById('circDisplay').style.display = 'none';
     document.getElementById('circBotones').innerHTML = `<button id="btnCircuito" class="boton-iniciar" onclick="iniciarCircuito()" style="margin-top:15px;width:100%;">▶ Iniciar Circuito</button>`;
-    document.getElementById('relojCircuito').className = "reloj";
+    document.getElementById('cronoCircuito').className = "reloj";
 }
 function iniciarIntervaloCircuito() {
     clearInterval(circIntervalo);
@@ -652,9 +782,9 @@ function iniciarIntervaloCircuito() {
         if (circEstado.tiempo <= 0) {
             if (circEstado.fase === 'trabajo') {
                 if (circEstado.ronda >= circConfig.rondas) { detenerCircuito(); aviso("¡Circuito terminado!"); return; }
-                circEstado.fase = 'descanso'; circEstado.tiempo = circConfig.descanso; document.getElementById('relojCircuito').className = "reloj brillo-naranja"; if (navigator.vibrate) navigator.vibrate([300]);
+                circEstado.fase = 'descanso'; circEstado.tiempo = circConfig.descanso; document.getElementById('cronoCircuito').className = "reloj brillo-azul"; if (navigator.vibrate) navigator.vibrate([300]);
             } else {
-                circEstado.ronda++; circEstado.fase = 'trabajo'; circEstado.tiempo = circConfig.trabajo; document.getElementById('relojCircuito').className = "reloj brillo-verde"; if (navigator.vibrate) navigator.vibrate([500]);
+                circEstado.ronda++; circEstado.fase = 'trabajo'; circEstado.tiempo = circConfig.trabajo; document.getElementById('cronoCircuito').className = "reloj brillo-verde"; if (navigator.vibrate) navigator.vibrate([500]);
             }
         }
         actualizarVistaCircuito();
@@ -662,7 +792,7 @@ function iniciarIntervaloCircuito() {
 }
 function actualizarVistaCircuito() {
     const f = document.getElementById('circFase'), t = document.getElementById('circTiempo'); if (!f || !t) return;
-    f.innerText = `Ronda ${circEstado.ronda}/${circConfig.rondas} · ${circEstado.fase === 'trabajo' ? 'TRABAJO' : 'DESCANSO'}`; f.style.color = circEstado.fase === 'trabajo' ? '#10B981' : '#F97316';
+    f.innerText = `Ronda ${circEstado.ronda}/${circConfig.rondas} · ${circEstado.fase === 'trabajo' ? 'TRABAJO' : 'DESCANSO'}`; f.style.color = circEstado.fase === 'trabajo' ? '#10B981' : '#3B82F6';
     t.innerText = formatoTiempo(circEstado.tiempo);
 }
 
@@ -680,7 +810,12 @@ function verAnio() {
         const esActual = (m === hoy.getMonth() && anioActual === hoy.getFullYear());
         meses += `<button class="mini-mes ${esActual ? "mini-mes-actual" : ""}" onclick="verMes(${m})"><span class="mini-mes-titulo">${nombresMeses[m]}</span><span class="mini-mes-dias">${htmlMiniMes(anioActual, m)}</span></button>`;
     }
-    contenido.innerHTML = `<span data-vista="calendario" hidden></span><h2>Calendario</h2><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><button onclick="cambiarAnio(-1)" style="background:#EF4444; padding:8px 15px;">◀</button><h3 style="margin:0;">${anioActual}</h3><button onclick="cambiarAnio(1)" style="background:#EF4444; padding:8px 15px;">▶</button></div><div class="anio-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">${meses}</div>`;
+    contenido.innerHTML = `<h2>Calendario</h2><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <button onclick="cambiarAnio(-1)" style="background:transparent; border:none; color:#EF4444; font-size:28px; padding:0 10px; box-shadow:none;">◀</button>
+        <h3 style="margin:0;">${anioActual}</h3>
+        <button onclick="cambiarAnio(1)" style="background:transparent; border:none; color:#EF4444; font-size:28px; padding:0 10px; box-shadow:none;">▶</button>
+    </div><div class="anio-grid" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">${meses}</div>`;
+    restaurarScroll();
 }
 function cambiarAnio(d) { anioActual += d; verAnio(); }
 function htmlMiniMes(anio, mes) {
@@ -693,14 +828,14 @@ function htmlMiniMes(anio, mes) {
     }
     return html;
 }
-
-
-function cambiarMes(d) { mesActual += d; if (mesActual > 11) { mesActual = 0; anioActual++; } if (mesActual < 0) { mesActual = 11; anioActual--; } verMes(mesActual); }
-
 function verMes(m) {
     mesActual = m;
     const p = new Date(anioActual, mesActual, 1).getDay(); const tot = new Date(anioActual, mesActual + 1, 0).getDate(); const des = p === 0 ? 6 : p - 1; const hoy = obtenerFechaActual();
-    let html = `<span data-vista="calendario" hidden></span><button class="boton-texto texto-volver" onclick="verAnio()">◀ ${anioActual}</button><div style="display:flex; justify-content:space-between; margin-bottom:15px;"><button onclick="cambiarMes(-1)" style="background:#EF4444; padding:8px 15px;">◀</button><h3 style="margin:0;">${nombresMeses[mesActual]} ${anioActual}</h3><button onclick="cambiarMes(1)" style="background:#EF4444; padding:8px 15px;">▶</button></div><div class="calendario-grid">`;
+    let html = `<button class="boton-texto texto-volver" onclick="verAnio()">◀ ${anioActual}</button><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <button onclick="cambiarMes(-1)" style="background:transparent; border:none; color:#EF4444; font-size:28px; padding:0 10px; box-shadow:none;">◀</button>
+        <h3 style="margin:0;">${nombresMeses[mesActual]} ${anioActual}</h3>
+        <button onclick="cambiarMes(1)" style="background:transparent; border:none; color:#EF4444; font-size:28px; padding:0 10px; box-shadow:none;">▶</button>
+    </div><div class="calendario-grid">`;
     for (let i = 0; i < des; i++) html += `<div></div>`;
     for (let d = 1; d <= tot; d++) {
         const f = fechaATexto(new Date(anioActual, mesActual, d)); let c = "dia-calendario"; if (f === hoy) c += " dia-hoy";
@@ -709,31 +844,29 @@ function verMes(m) {
     }
     html += `</div>`;
     contenido.innerHTML = html;
-    restaurarScroll(); // <--- RESTAURA LA POSICIÓN
+    restaurarScroll();
 }
-
+function cambiarMes(d) { mesActual += d; if (mesActual > 11) { mesActual = 0; anioActual++; } if (mesActual < 0) { mesActual = 11; anioActual--; } verMes(mesActual); }
 function abrirDia(f) {
-    guardarScroll(); // <--- GUARDA LA POSICIÓN
+    guardarScroll();
     const e = historial.filter(i => i.fecha === f); const c = carreras.filter(x => x.fecha === f); const n = notasDias[f] || [];
     const hE = e.length === 0 ? "<p>No hay entrenamientos.</p>" : e.map(i => `<div class="tarjeta-rutina"><h3>${escaparHTML(i.rutina)}</h3><p>${i.series} series</p><button class="boton-texto texto-rojo" onclick="eliminarHistorial('${i.id}')">🗑 Eliminar</button></div>`).join("");
     const hC = c.length === 0 ? "" : `<h3>🏃 Cardio</h3>${c.map(x => `<div class="tarjeta-rutina"><p>${resumenCarrera(x)}</p></div>`).join("")}`;
     const hN = n.length === 0 ? "<p>No hay anotaciones.</p>" : n.map(x => `<div class="tarjeta-rutina" style="display:flex; justify-content:space-between;"><span>${escaparHTML(x.texto)}</span><button class="boton-texto texto-rojo" onclick="eliminarNota('${f}','${x.id}')">🗑</button></div>`).join("");
     contenido.innerHTML = `<button class="boton-texto" onclick="verMes(${mesActual})" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${formatearFecha(f)}</h2><h3>🏋️ Entrenamientos</h3>${hE}${hC}<h3>📝 Anotaciones</h3>${hN}<div class="tarjeta-rutina"><h3>Nueva anotación</h3><textarea id="notaTexto" placeholder="Escribe aquí..."></textarea><button onclick="guardarNota('${f}')" style="width:100%;">Añadir</button></div>`;
 }
-
 function guardarNota(f) { const t = document.getElementById("notaTexto").value.trim(); if (!t) return; if (!notasDias[f]) notasDias[f] = []; notasDias[f].push({ id: generarId(), texto: t }); guardarDatos(); abrirDia(f); }
 function eliminarNota(f, id) { notasDias[f] = notasDias[f].filter(n => n.id !== id); if (notasDias[f].length === 0) delete notasDias[f]; guardarDatos(); abrirDia(f); }
 function eliminarHistorial(id) { historial = historial.filter(i => i.id !== id); guardarDatos(); mostrarCalendario(); }
 
 /* =====================================================
-   TIEMPO
+   TIEMPO (CON RADAR)
 ===================================================== */
 function mostrarTiempo() {
     contenido.innerHTML = `
-        <span data-vista="tiempo" hidden></span>
         <h2>El Tiempo 🌤️</h2>
         <div id="resultadoTiempo"></div>
-        <button onclick="forzarActualizacionTiempo()" class="boton-mini" style="margin-top:20px; width:100%; background:var(--bg-box);">🔄 Forzar actualización</button>
+        <button onclick="forzarActualizacionTiempo()" class="boton-mini" style="margin-top:20px; width:100%; background:var(--bg-box);">🔄 Actualizar</button>
     `;
     
     const cache = localStorage.getItem("climaCache");
@@ -742,14 +875,12 @@ function mostrarTiempo() {
 
     if (cache) {
         c.innerHTML = cache;
-        // Si ha pasado más de 2 horas (7200000 ms), actualizamos en segundo plano
-        if (hora && (Date.now() - parseInt(hora)) > 7200000) {
-            actualizarTiempoSilencioso();
-        }
+        if (hora && (Date.now() - parseInt(hora)) > 7200000) actualizarTiempoSilencioso();
     } else {
         c.innerHTML = `<p style="text-align:center;">Buscando el tiempo...</p>`;
         actualizarTiempoSilencioso();
     }
+    restaurarScroll();
 }
 
 function forzarActualizacionTiempo() {
@@ -770,8 +901,12 @@ function actualizarTiempoSilencioso() {
             else if ([2, 3].includes(cod)) { i = "☁️"; txt = "Nublado"; } 
             else if (cod >= 50) { i = "🌧️"; txt = "Lluvia"; }
 
+            const porcentaje = Math.min(Math.max(t / 50, 0), 1);
+            const dashArray = 2 * Math.PI * 45;
+            const dashOffset = dashArray - (porcentaje * dashArray);
+
             let horasHTML = ""; const ahora = new Date().getHours();
-            for (let h = ahora; h <= ahora + 12; h++) { 
+            for (let h = ahora; h <= ahora + 4; h++) { 
                 if(!d.hourly.time[h]) break; 
                 const hs = d.hourly.time[h].split("T")[1]; 
                 const th = Math.round(d.hourly.temperature_2m[h]); 
@@ -780,72 +915,40 @@ function actualizarTiempoSilencioso() {
             }
 
             const htmlClima = `
-                <div class="clima-actual">
-                    <div style="font-size:50px;">${i}</div>
-                    <h3>${t}°C</h3>
-                    <p style="color:white; opacity:0.9;">${txt} · Viento: ${v} km/h</p>
+                <div style="text-align:center; padding:20px; background:var(--bg-main); border-radius:16px;">
+                    <div class="radar-tiempo">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="var(--bg-box)" stroke-width="8" />
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="var(--accent)" stroke-width="8"
+                                stroke-dasharray="${dashArray}" stroke-dashoffset="${dashOffset}" stroke-linecap="round" />
+                        </svg>
+                        <div class="temperatura-texto">${t}°C</div>
+                    </div>
+                    <h3 style="margin:10px 0 5px 0;">${i} ${txt}</h3>
+                    <p style="color:var(--text-muted); font-size:14px;">💨 Viento: ${v} km/h</p>
                 </div>
-                <h4 style="margin-left:10px;">Próximas horas</h4>
+                <h4 style="margin-left:10px; margin-top:20px;">Próximas horas</h4>
                 <div class="clima-horas">${horasHTML}</div>
             `;
             
             const c = document.getElementById("resultadoTiempo");
             if (c) c.innerHTML = htmlClima;
             
-            localStorage.setItem("climaCache", htmlClima);
-            localStorage.setItem("climaCacheHora", Date.now());
-        });
-    });
-}
-
-function forzarActualizacionTiempo() {
-    const c = document.getElementById("resultadoTiempo");
-    c.innerHTML = `<p style="text-align:center;">Buscando...</p>`;
-    actualizarTiempoSilencioso();
-}
-
-function actualizarTiempoSilencioso() {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(function(pos) {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&hourly=temperature_2m,weathercode`)
-        .then(r => r.json())
-        .then(d => {
-            const t = d.current_weather.temperature, v = d.current_weather.windspeed, cod = d.current_weather.weathercode;
-            let i = "🌤️", txt = "Despejado";
-            if ([0, 1].includes(cod)) { i = "☀️"; txt = "Soleado"; } 
-            else if ([2, 3].includes(cod)) { i = "☁️"; txt = "Nublado"; } 
-            else if (cod >= 50) { i = "🌧️"; txt = "Lluvia"; }
-
-            let horasHTML = ""; const ahora = new Date().getHours();
-            for (let h = ahora; h <= ahora + 12; h++) { 
-                if(!d.hourly.time[h]) break; 
-                const hs = d.hourly.time[h].split("T")[1]; 
-                const th = Math.round(d.hourly.temperature_2m[h]); 
-                let ih = "🌤️"; if ([0, 1].includes(d.hourly.weathercode[h])) ih = "☀️"; else if ([2, 3].includes(d.hourly.weathercode[h])) ih = "☁️"; else if (d.hourly.weathercode[h] >= 50) ih = "🌧️"; 
-                horasHTML += `<div class="clima-hora"><span>${hs}</span><strong>${ih}</strong><span>${th}°C</span></div>`; 
-            }
-
-            const htmlClima = `
-                <div class="clima-actual">
-                    <div style="font-size:50px;">${i}</div>
-                    <h3>${t}°C</h3>
-                    <p style="color:white; opacity:0.9;">${txt} · Viento: ${v} km/h</p>
+            const htmlClimaInicio = `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-size:40px; line-height:1;">${i}</div>
+                    <h3 style="font-size:28px; margin:5px 0; color:var(--text-main);">${t}°C</h3>
+                    <p style="font-size:12px;">${txt}</p>
                 </div>
-                <h4 style="margin-left:10px;">Próximas horas</h4>
-                <div class="clima-horas">${horasHTML}</div>
             `;
-            
-            const c = document.getElementById("resultadoTiempo");
-            if (c) c.innerHTML = htmlClima;
-            
-            localStorage.setItem("climaCache", htmlClima);
+            localStorage.setItem("climaCache", htmlClimaInicio);
             localStorage.setItem("climaCacheHora", Date.now());
         });
     });
 }
 
 /* =====================================================
-   CARDIO
+   CARDIO (CON MAPA RUNKEEPER)
 ===================================================== */
 const tiposCardio = { 
     correr: { nombre: "Correr", icono: "🏃", gps: true, ritmo: true, met: 9.8 }, 
@@ -866,14 +969,63 @@ function tiempoCorrerMs() { return correr.estado === "corriendo" ? correr.acumMs
 function elegirTipoCardio(c) { tipoCardio = c; mostrarCorrer(); }
 
 function mostrarCorrer() {
-    const total = carreras.reduce((t, c) => t + (c.distancia || 0), 0) / 1000; const kcal = carreras.reduce((t, c) => t + caloriasDe(c), 0); const tipo = correr.estado === "parado" ? tipoCardio : correr.tipo; const t = tiposCardio[tipo];
-    let b = correr.estado === "parado" ? `<button class="boton-iniciar ancho-completo" style="grid-column:1/-1;" onclick="empezarCorrer()">▶ Empezar</button>` : correr.estado === "corriendo" ? `<button style="background:#F59E0B;" onclick="pausarCorrer()">⏸ Pausar</button><button class="boton-pausar" onclick="terminarCorrer()">⏹ Terminar</button>` : `<button class="boton-iniciar" onclick="continuarCorrer()">▶ Continuar</button><button class="boton-pausar" onclick="terminarCorrer()">⏹ Terminar</button>`;
-    const sel = correr.estado === "parado" ? `<div class="selector-chips">${Object.keys(tiposCardio).map(k => `<button class="chip ${k === tipoCardio ? "activo" : ""}" onclick="elegirTipoCardio('${k}')">${tiposCardio[k].icono} ${tiposCardio[k].nombre}</button>`).join("")}</div>` : `<h3>${t.icono} ${t.nombre}</h3>`;
+    guardarScroll();
+    const tipo = correr.estado === "parado" ? tipoCardio : correr.tipo; 
+    const t = tiposCardio[tipo];
+    
+    let b = correr.estado === "parado" 
+        ? `<button class="boton-iniciar ancho-completo" style="grid-column:1/-1;" onclick="empezarCorrer()">▶ Empezar</button>` 
+        : correr.estado === "corriendo" 
+        ? `<button style="background:#F59E0B; color:white;" onclick="pausarCorrer()">⏸ Pausar</button><button class="boton-pausar" onclick="terminarCorrer(event)">⏹ Terminar</button>` 
+        : `<button class="boton-iniciar" onclick="continuarCorrer()">▶ Continuar</button><button class="boton-pausar" onclick="terminarCorrer(event)">⏹ Terminar</button>`;
+        
+    const sel = correr.estado === "parado" 
+        ? `<div class="selector-chips">${Object.keys(tiposCardio).map(k => `<button class="chip ${k === tipoCardio ? "activo" : ""}" onclick="elegirTipoCardio('${k}')">${tiposCardio[k].icono} ${tiposCardio[k].nombre}</button>`).join("")}</div>` 
+        : `<h3>${t.icono} ${t.nombre}</h3>`;
+        
     const cG = t.gps ? `<div class="dato-resumen"><strong id="correrDist">0,00</strong><span>km</span></div><div class="dato-resumen"><strong id="correrRitmo">–</strong><span>${t.ritmo ? "min/km" : "km/h"}</span></div>` : "";
-    contenido.innerHTML = `<span data-vista="correr" hidden></span><h2>Cardio 🏃</h2><div class="panel-correr">${sel}<p id="correrGps" style="font-size:12px; color:var(--text-muted); text-align:center;"></p><div style="font-size:52px; font-weight:800; text-align:center; font-family:monospace;" id="correrTiempo">00:00</div><div class="resumen-progreso">${cG}<div class="dato-resumen" style="grid-column:1/-1;"><strong id="correrKcal">0</strong><span>kcal</span></div></div><div class="botones-correr">${b}</div></div><button onclick="mostrarFormularioCarrera()" style="width:100%;">+ Añadir actividad manual</button><div class="resumen-progreso" style="margin-top:20px;"><div class="tarjeta-rutina" style="margin:0; text-align:center;"><strong>${carreras.length}</strong><br><span>Actividades</span></div><div class="tarjeta-rutina" style="margin:0; text-align:center;"><strong>${formatoKm(total)}</strong><br><span>Km</span></div></div><h3>Historial</h3>${carreras.slice().reverse().map(c => `<div class="tarjeta-rutina"><h3>${formatearFecha(c.fecha)}</h3><p>${resumenCarrera(c)}</p><button class="boton-texto" onclick="verCarrera('${c.id}')">Ver</button><button class="boton-texto texto-rojo" onclick="eliminarCarrera('${c.id}')">🗑</button></div>`).join("")}`;
+    
+    const historialHTML = carreras.slice().reverse().map(c => {
+        const info = tiposCardio[tipoDe(c)];
+        return `
+        <div class="item-mini" onclick="verCarrera('${c.id}', 'correr')" style="cursor:pointer; margin-bottom: 8px; padding: 12px 15px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:20px;">${info.icono}</span>
+                <div>
+                    <strong style="font-size:14px; color:var(--text-main);">${info.nombre}</strong><br>
+                    <span style="font-size:12px; color:var(--text-muted);">${formatearFecha(c.fecha)}</span>
+                </div>
+            </div>
+            <span style="color:var(--text-muted); font-size: 18px;">▸</span>
+        </div>
+    `}).join("");
+
+    contenido.innerHTML = `
+        <h2>Cardio 🏃</h2>
+        <div class="panel-correr" style="padding:15px;">
+            ${sel}<p id="correrGps" style="font-size:12px; color:var(--text-muted); text-align:center;"></p>
+            <div style="font-size:52px; font-weight:800; text-align:center; font-family:monospace;" id="correrTiempo">00:00</div>
+            <div class="resumen-progreso">${cG}<div class="dato-resumen" style="grid-column:1/-1;"><strong id="correrKcal">0</strong><span>kcal</span></div></div>
+            <div class="botones-correr">${b}</div>
+        </div>
+        
+        <h3 style="margin-top:20px;">Historial</h3>
+        ${historialHTML}
+    `;
     actualizarVistaCorrer();
+    restaurarScroll();
 }
 
+function toggleConfirmacionCarrera(id) {
+    const div = document.getElementById(`confirm_c_${id}`);
+    if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+function eliminarCarreraDirecto(id) {
+    carreras = carreras.filter(c => c.id !== id);
+    guardarDatos();
+    mostrarCorrer();
+    aviso("🗑 Actividad eliminada.");
+}
 function actualizarVistaCorrer() { const t = document.getElementById("correrTiempo"); if (!t) return; const tipo = correr.estado === "parado" ? tipoCardio : correr.tipo; const tp = tiposCardio[tipo]; const s = Math.floor(tiempoCorrerMs() / 1000); const km = correr.distM / 1000; t.innerText = formatoTiempo(s); const d = document.getElementById("correrDist"); if (d) d.innerText = formatoKm(km); const r = document.getElementById("correrRitmo"); if (r) r.innerText = km <= 0.05 ? "–" : tp.ritmo ? formatoRitmo(s / km) : formatoNum(km / (s / 3600)); const k = document.getElementById("correrKcal"); if (k) k.innerText = calcularCalorias(tipo, s, correr.distM, pesoCalorias()); const g = document.getElementById("correrGps"); if (g) g.innerText = correr.gps === "ok" ? `GPS activo (±${Math.round(correr.precision || 0)} m)` : "Buscando GPS..."; }
 function iniciarTickCorrer() { clearInterval(correr.intervalo); correr.intervalo = setInterval(actualizarVistaCorrer, 1000); }
 function iniciarGps() { if (!tiposCardio[correr.tipo].gps) return; if (!navigator.geolocation) return; correr.gps = "buscando"; correr.ultimaPos = null; correr.watchId = navigator.geolocation.watchPosition(posicionCorrer, () => { correr.gps = "error"; }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }); }
@@ -883,94 +1035,213 @@ function posicionCorrer(p) { if (correr.estado !== "corriendo") return; correr.p
 function empezarCorrer() { const t = tipoCardio; correr = nuevoEstadoCorrer(); correr.tipo = t; correr.estado = "corriendo"; correr.inicio = Date.now(); iniciarGps(); iniciarTickCorrer(); mostrarCorrer(); }
 function pausarCorrer() { if (correr.estado !== "corriendo") return; correr.acumMs += Date.now() - correr.inicio; correr.estado = "pausado"; detenerGps(); clearInterval(correr.intervalo); mostrarCorrer(); }
 function continuarCorrer() { if (correr.estado !== "pausado") return; correr.estado = "corriendo"; correr.inicio = Date.now(); correr.ultimaPos = null; iniciarGps(); iniciarTickCorrer(); mostrarCorrer(); }
-function terminarCorrer() { if (correr.estado === "parado") return; const d = Math.round(tiempoCorrerMs() / 1000); confirmar("¿Terminar y guardar?", () => { detenerGps(); clearInterval(correr.intervalo); if (d < 10) { correr = nuevoEstadoCorrer(); mostrarCorrer(); return; } const c = { id: generarId(), tipo: correr.tipo, fecha: obtenerFechaActual(), duracion: d, distancia: Math.round(correr.distM), calorias: calcularCalorias(correr.tipo, d, correr.distM, pesoCalorias()), ruta: correr.puntos }; carreras.push(c); guardarDatos(); correr = nuevoEstadoCorrer(); aviso("¡Guardada!"); mostrarCorrer(); }); }
+
+function terminarCorrer(evento) { 
+    if (correr.estado === "parado") return; 
+    const d = Math.round(tiempoCorrerMs() / 1000); 
+    
+    confirmar("¿Terminar y guardar?", () => { 
+        detenerGps(); 
+        clearInterval(correr.intervalo); 
+        
+        if (d < 10) { 
+            correr = nuevoEstadoCorrer(); 
+            mostrarCorrer(); 
+            return; 
+        } 
+        
+        const c = { 
+            id: generarId(), 
+            tipo: correr.tipo, 
+            fecha: obtenerFechaActual(), 
+            duracion: d, 
+            distancia: Math.round(correr.distM), 
+            calorias: calcularCalorias(correr.tipo, d, correr.distM, pesoCalorias()), 
+            ruta: correr.puntos 
+        }; 
+        
+        carreras.push(c); 
+        guardarDatos(); 
+        correr = nuevoEstadoCorrer(); 
+        aviso("¡Guardada!"); 
+        
+        // ESTA ES LA LÍNEA QUE HACE QUE SE ABRA EL CUADRO AL GUARDAR
+        verCarrera(c.id, "correr"); 
+        
+    }, evento ? evento.target : null); 
+}
+
 function resumenCarrera(c) { const t = tiposCardio[tipoDe(c)]; const km = (c.distancia || 0) / 1000; return `${t.icono} ${formatoKm(km)} km · ${formatoTiempo(c.duracion)} · ${caloriasDe(c)} kcal`; }
-function verCarrera(id) { const c = carreras.find(x => x.id === id); if (!c) return; contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarCorrer()">◀ Volver</button><h2>${tiposCardio[tipoDe(c)].icono} ${formatearFecha(c.fecha)}</h2><div class="resumen-progreso"><div class="dato-resumen"><strong>${formatoKm(c.distancia/1000)}</strong><span>Km</span></div><div class="dato-resumen"><strong>${formatoTiempo(c.duracion)}</strong><span>Tiempo</span></div><div class="dato-resumen"><strong>${caloriasDe(c)}</strong><span>kcal</span></div></div>`; }
-function eliminarCarrera(id) { confirmar("¿Eliminar?", () => { carreras = carreras.filter(c => c.id !== id); guardarDatos(); mostrarCorrer(); }); }
-function mostrarFormularioCarrera() { contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarCorrer()">◀ Volver</button><h2>Actividad manual</h2><label>Actividad</label><select id="carTipo">${Object.keys(tiposCardio).map(k => `<option value="${k}">${tiposCardio[k].nombre}</option>`).join("")}</select><label>Fecha</label><input type="date" id="carFecha" value="${obtenerFechaActual()}"><label>Km</label><input type="number" step="0.1" id="carKm"><label>Minutos</label><input type="number" id="carMin"><button onclick="guardarCarreraManual()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; }
-function guardarCarreraManual() { const t = document.getElementById("carTipo").value, f = document.getElementById("carFecha").value, km = parseFloat(document.getElementById("carKm").value) || 0, min = parseInt(document.getElementById("carMin").value) || 0; if (min <= 0) { alert("Falta tiempo."); return; } carreras.push({ id: generarId(), tipo: t, fecha: f, duracion: min * 60, distancia: Math.round(km * 1000), calorias: calcularCalorias(t, min * 60, km * 1000, pesoCalorias()), ruta: [] }); guardarDatos(); mostrarCorrer(); }
+
+function verCarrera(id, origen) { 
+    guardarScroll();
+    origenCarrera = origen || "correr";
+    const c = carreras.find(x => x.id === id); if (!c) return; 
+    const t = tiposCardio[tipoDe(c)];
+    const km = (c.distancia || 0) / 1000;
+    
+    contenido.innerHTML = `
+        <button class="boton-texto" onclick="mostrarCorrer()" style="color:var(--accent); font-size:16px; margin-bottom:15px; font-weight:bold; padding:0;">◀ Volver</button>
+        <div style="text-align:center; margin-bottom:20px;">
+            <h2 style="margin:0;">${t.icono} ${t.nombre}</h2>
+            <p style="margin:5px 0 0 0;">${formatearFecha(c.fecha)}</p>
+        </div>
+        
+        <div class="tarjeta-rutina" style="text-align:center; padding:20px;">
+            <div style="display:flex; justify-content:space-around; margin-bottom:20px;">
+                <div><h3 style="font-size:28px; margin:0;">${formatoKm(km)}</h3><span style="font-size:12px; color:var(--text-muted);">Distancia (km)</span></div>
+                <div><h3 style="font-size:28px; margin:0;">${formatoTiempo(c.duracion)}</h3><span style="font-size:12px; color:var(--text-muted);">Tiempo</span></div>
+                <div><h3 style="font-size:28px; margin:0;">${caloriasDe(c)}</h3><span style="font-size:12px; color:var(--text-muted);">Kcal</span></div>
+            </div>
+            
+            ${km > 0 ? `<div style="display:flex; justify-content:space-around; border-top:1px solid var(--border-color); padding-top:15px;">
+                <div><h4 style="margin:0;">${t.ritmo ? formatoRitmo(c.duracion / km) : formatoNum(velocidadKmh(c.duracion, c.distancia))}</h4><span style="font-size:12px; color:var(--text-muted);">${t.ritmo ? 'Ritmo Medio' : 'Vel. Media'}</span></div>
+            </div>` : ""}
+        </div>
+        
+        ${t.gps && c.ruta && c.ruta.length > 1 ? htmlRuta(c.ruta) : ""}
+        
+        <button onclick="eliminarCarrera('${c.id}', event)" style="width:100%; margin-top:30px; background:#EF4444; color:white; border:none; border-radius:var(--radio); padding:12px; font-weight:bold; cursor:pointer;">🗑 Eliminar actividad</button>
+    `;
+    restaurarScroll();
+}
+
+function eliminarCarrera(id, evento) {
+    confirmar("¿Eliminar esta actividad?", () => {
+        carreras = carreras.filter(c => c.id !== id);
+        guardarDatos();
+        aviso("🗑 Actividad eliminada.");
+        mostrarCorrer();
+    }, evento ? evento.target : null);
+}
+
+function htmlRuta(ruta) {
+    if (!ruta || ruta.length < 2) return "";
+    const W = 320, H = 240, pad = 22;
+    const lats = ruta.map(p => p[0]); const lons = ruta.map(p => p[1]);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats); const minLon = Math.min(...lons), maxLon = Math.max(...lons);
+    const cos = Math.cos(((minLat + maxLat) / 2) * Math.PI / 180);
+    const w = (maxLon - minLon) * cos || 0.00001; const h = (maxLat - minLat) || 0.00001;
+    const esc = Math.min((W - 2 * pad) / w, (H - 2 * pad) / h);
+    const oX = (W - w * esc) / 2; const oY = (H - h * esc) / 2;
+    const pt = p => [oX + (p[1] - minLon) * cos * esc, oY + (maxLat - p[0]) * esc];
+    
+    const p = ruta.map(x => pt(x).map(v => v.toFixed(1)).join(",")).join(" "); 
+    const ini = pt(ruta[0]), fin = pt(ruta[ruta.length - 1]);
+    
+    return `
+        <h3 style="margin-top:20px;">Recorrido</h3>
+        <div class="caja-grafica" style="padding:0; overflow:hidden; background:#1E293B; border: 1px solid var(--border-color);">
+            <svg viewBox="0 0 ${W} ${H}" style="width:100%; display:block; background:#111827;">
+                ${[50,100,150,200,250].map(y => `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#374151" stroke-width="1" stroke-dasharray="4"/>`).join("")}
+                ${[50,100,150,200,250].map(x => `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#374151" stroke-width="1" stroke-dasharray="4"/>`).join("")}
+                <polyline points="${p}" fill="none" stroke="#3B82F6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="${ini[0].toFixed(1)}" cy="${ini[1].toFixed(1)}" r="6" fill="#10B981" stroke="#fff" stroke-width="2"/>
+                <circle cx="${fin[0].toFixed(1)}" cy="${fin[1].toFixed(1)}" r="6" fill="#EF4444" stroke="#fff" stroke-width="2"/>
+            </svg>
+            <div style="padding:10px; text-align:center; font-size:12px; color:var(--text-muted);">🟢 Inicio · 🔴 Fin</div>
+        </div>
+    `;
+}
 
 /* =====================================================
-   MÚSICA, PODCASTS Y VÍDEOS
+   MÚSICA, PODCASTS Y VÍDEOS (ESTILO MINIMALISTA)
 ===================================================== */
 let dbAudio;
 function initAudioDB(cb) { if (dbAudio) { cb(); return; } const r = indexedDB.open("EntrenamientoAudioDB", 1); r.onupgradeneeded = e => { dbAudio = e.target.result; if (!dbAudio.objectStoreNames.contains("audios")) dbAudio.createObjectStore("audios", { keyPath: "id" }); }; r.onsuccess = e => { dbAudio = e.target.result; cb(); }; }
 
-function crearListaLocal(cat) { const n = prompt("Nombre:"); if (!n || !n.trim()) return; listasMusica.push({ id: "lista_" + Date.now(), nombre: n.trim(), categoria: cat }); guardarDatos(); mostrarMusica(cat); }
-function eliminarListaLocal(id, cat) { confirmar("¿Eliminar lista?", () => { listasMusica = listasMusica.filter(l => l.id !== id); guardarDatos(); mostrarMusica(cat); }); }
-
 function mostrarMusica(pestanaActiva) {
     pestanaActiva = pestanaActiva || "musica"; const esP = pestanaActiva === "podcasts";
     const filt = listasMusica.filter(l => l.categoria === pestanaActiva);
-    const tarjetas = filt.length === 0 ? `<p style="text-align:center;">No hay listas guardadas.</p>` : filt.map(l => `
-        <div class="tarjeta-rutina" style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="flex:1; cursor:pointer;" onclick="verListaLocal('${l.id}', '${pestanaActiva}')"><h3 style="margin:0;">${esP ? "🎙" : "🎵"} ${escaparHTML(l.nombre)}</h3></div>
-            <button class="boton-texto texto-azul" onclick="reproducirListaEntera('${l.id}')" style="font-size: 18px;">▶</button>
-        </div>
-    `).join("");
     
+    let tarjetas = "";
+    if (filt.length === 0) {
+        tarjetas = `<p style="text-align:center;">No hay listas guardadas.</p>`;
+    } else {
+        tarjetas = filt.map(l => `
+            <div class="item-mini">
+                <span style="font-size:14px; color:var(--text-main);">${esP ? "🎙" : "🎵"} ${escaparHTML(l.nombre)}</span>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn-mini-accion" style="color:var(--accent);" onclick="verListaLocal('${l.id}', '${pestanaActiva}')">Abrir</button>
+                    <button class="btn-mini-accion" onclick="reproducirListaEntera('${l.id}')">▶</button>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    let botonExterno = "";
+    if (esP) {
+        botonExterno = '<button onclick="abrirEnlace(\'https://www.ivoox.com\')" style="background:#E65100; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir iVoox</button>';
+    } else {
+        botonExterno = '<button onclick="abrirEnlace(\'https://music.youtube.com\')" style="background:#EF4444; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir YouTube Music</button>';
+    }
+
     contenido.innerHTML = `
-        <span data-vista="musica" hidden></span><h2>Música y Podcasts 🎵</h2>
-        <div style="display:flex; gap:10px; margin-bottom:20px;">
-            <button class="chip ${!esP ? 'activo' : ''}" style="flex:1; padding: 14px 10px; font-size: 16px; font-weight:bold; border-radius: 30px; ${!esP ? 'background:var(--accent); color:white;' : ''}" onclick="mostrarMusica('musica')">🎵 Música</button>
-            <button class="chip ${esP ? 'activo' : ''}" style="flex:1; padding: 14px 10px; font-size: 16px; font-weight:bold; border-radius: 30px; ${esP ? 'background:var(--accent); color:white;' : ''}" onclick="mostrarMusica('podcasts')">🎙 Podcasts</button>
+        <h2>Música y Podcasts 🎵</h2>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <button class="chip ${!esP ? 'activo' : ''}" style="flex:1; padding: 10px; font-size: 14px; font-weight:bold; border-radius: 20px; ${!esP ? 'background:var(--accent); color:white;' : ''}" onclick="mostrarMusica('musica')">🎵 Música</button>
+            <button class="chip ${esP ? 'activo' : ''}" style="flex:1; padding: 10px; font-size: 14px; font-weight:bold; border-radius: 20px; ${esP ? 'background:var(--accent); color:white;' : ''}" onclick="mostrarMusica('podcasts')">🎙 Podcasts</button>
         </div>
-        <div class="tarjeta-rutina" style="text-align:center; padding:20px 15px; margin-bottom:15px;">
-            <p style="margin-bottom:12px; font-size:14px;">Abre tu app de audio externa si lo prefieres.</p>
-            ${esP ? `<button onclick="abrirEnlace('https://www.ivoox.com')" style="background:#E65100; width: 75%; margin: 0 auto; display: block; padding: 8px; font-size: 14px; border-radius: 20px; font-weight:normal;">▶ Abrir iVoox</button>` : `<button onclick="abrirEnlace('https://music.youtube.com')" style="background:#EF4444; width: 75%; margin: 0 auto; display: block; padding: 8px; font-size: 14px; border-radius: 20px; font-weight:normal;">▶ Abrir YouTube Music</button>`}
+        <div class="tarjeta-rutina" style="text-align:center; padding:15px 10px; margin-bottom:15px;">
+            <p style="margin:0 0 10px 0; font-size:13px;">Abre tu app externa si lo prefieres.</p>
+            ${botonExterno}
         </div>
-        <button onclick="crearListaLocal('${pestanaActiva}')" class="boton-mini" style="background:#3B82F6; color:white; margin-bottom:15px;">+ Crear lista de ${esP ? 'podcasts' : 'música'}</button>
-        <h3>Mis listas</h3>${tarjetas}
+        <button onclick="crearListaLocal('${pestanaActiva}')" class="boton-mini" style="background:#3B82F6; color:white; width:70%; margin: 0 auto 15px auto; display:block; padding:8px; font-size:13px;">+ Crear lista de ${esP ? 'podcasts' : 'música'}</button>
+        <h3>Mis listas</h3>
+        ${tarjetas}
     `;
-    restaurarScroll(); // <--- RESTAURA LA POSICIÓN
+    restaurarScroll();
 }
 
+function crearListaLocal(cat) { const n = prompt("Nombre:"); if (!n || !n.trim()) return; listasMusica.push({ id: "lista_" + Date.now(), nombre: n.trim(), categoria: cat }); guardarDatos(); mostrarMusica(cat); }
+function eliminarListaLocal(id, cat) { confirmar("¿Eliminar lista?", () => { listasMusica = listasMusica.filter(l => l.id !== id); guardarDatos(); mostrarMusica(cat); }); }
+
 function verListaLocal(id, cat) {
-    guardarScroll(); // <--- GUARDA LA POSICIÓN
+    guardarScroll();
     const l = listasMusica.find(x => x.id === id); if (!l) return;
     initAudioDB(() => {
         const rq = dbAudio.transaction("audios", "readonly").objectStore("audios").getAll();
         rq.onsuccess = () => {
             const auds = rq.result.filter(a => a.listaId === id);
             const h = auds.length === 0 ? `<p>Lista vacía.</p>` : auds.map(a => `
-                <div class="enlace-lista" style="display:flex; flex-direction:column; border-bottom:1px solid var(--border-color); padding:12px 0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                        <strong style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escaparHTML(a.nombre)}</strong>
-                        <div>
-                            <button class="boton-texto texto-azul" onclick="editarNombreAudio('${a.id}', '${id}', '${cat}')" style="padding:5px; margin-right:5px;">✏️</button>
-                            <button class="boton-texto texto-rojo" onclick="toggleConfirmacionAudio('${a.id}')" style="padding:5px;">🗑</button>
+                <div class="item-mini" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                        <span style="font-size:14px; font-weight:bold; color:var(--text-main);">${escaparHTML(a.nombre)}</span>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-mini-accion" onclick="editarNombreAudio('${a.id}', '${id}', '${cat}')">✏️</button>
+                            <button class="btn-mini-accion" style="color:#EF4444;" onclick="toggleConfirmacionAudio('${a.id}')">🗑</button>
                         </div>
                     </div>
-                    <div id="confirm_audio_${a.id}" style="display:none; margin-top:10px; padding:12px; background:var(--bg-main); border-radius:10px; border: 1px solid var(--border-color);">
-                        <p style="margin:0 0 10px 0; font-size:14px; color:var(--text-main);">¿Quieres eliminar este audio?</p>
-                        <div style="display:flex; gap:10px;">
-                            <button onclick="eliminarAudioDirecto('${a.id}', '${id}', '${cat}')" style="background:#10B981; color:white; flex:1; padding:8px;">Sí</button>
-                            <button onclick="toggleConfirmacionAudio('${a.id}')" style="background:#EF4444; color:white; flex:1; padding:8px;">No</button>
+                    <div id="confirm_audio_${a.id}" style="display:none; width:100%; padding:8px; background:var(--bg-card); border-radius:6px;">
+                        <p style="margin:0 0 5px 0; font-size:11px;">¿Eliminar audio?</p>
+                        <div style="display:flex; gap:5px;">
+                            <button onclick="eliminarAudioDirecto('${a.id}', '${id}', '${cat}')" style="background:#10B981; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">Sí</button>
+                            <button onclick="toggleConfirmacionAudio('${a.id}')" style="background:#EF4444; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">No</button>
                         </div>
                     </div>
                 </div>
             `).join("");
             contenido.innerHTML = `
-                <button class="boton-texto" onclick="mostrarMusica('${cat}')" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${escaparHTML(l.nombre)}</h2>
-                <div class="tarjeta-rutina" style="margin-bottom:15px;">
-                    <label>Añadir archivo de audio</label>
-                    <button onclick="añadirAudiosALista('${id}', '${cat}')" class="boton-mini" style="background:#10B981; color:white; margin-bottom:15px;">+ Subir archivo</button>
-                    <label>O pegar enlace directo (.mp3)</label>
-                    <div style="display:flex; gap:10px;"><input type="url" id="urlAudio_${id}" placeholder="https://ejemplo.com/audio.mp3" style="flex:1;"><button onclick="añadirEnlaceAudio('${id}', '${cat}')" class="boton-mini" style="background:#3B82F6; color:white;">Añadir</button></div>
+                <button class="boton-texto" onclick="mostrarMusica('${cat}')" style="color: var(--accent); font-size: 14px; margin-bottom: 15px; font-weight: bold; padding: 0;">◀ Volver</button>
+                <h2>${escaparHTML(l.nombre)}</h2>
+                <div class="tarjeta-rutina" style="flex-direction:column; align-items:stretch; gap:10px; margin-bottom:15px; padding:12px;">
+                    <div><label style="margin:0; font-size:12px;">Añadir archivo</label>
+                    <button onclick="añadirAudiosALista('${id}', '${cat}')" class="boton-mini" style="background:#10B981; color:white; width:100%; padding:6px; font-size:13px; margin-top:5px;">+ Subir audio</button></div>
+                    <div><label style="margin:0; font-size:12px;">O pegar enlace (.mp3)</label>
+                    <div style="display:flex; gap:5px; margin-top:5px;"><input type="url" id="urlAudio_${id}" placeholder="https://..." style="flex:1; padding:6px; font-size:13px;"><button onclick="añadirEnlaceAudio('${id}', '${cat}')" class="boton-mini" style="background:#3B82F6; color:white; padding:6px 10px; font-size:13px;">Añadir</button></div></div>
                 </div>
-                <div style="display:flex; gap:10px; margin-bottom:15px;"><button onclick="reproducirListaEntera('${id}')" class="boton-mini" style="background:#3B82F6; color:white;">▶ Reproducir todo</button></div>
-                <div class="tarjeta-rutina">${h}</div>
-                <button class="boton-texto texto-rojo" onclick="eliminarListaLocal('${id}', '${cat}')" style="width:100%; margin-top:20px;">🗑 Eliminar lista entera</button>
+                <button onclick="reproducirListaEntera('${id}')" style="background:#3B82F6; color:white; width:100%; padding:8px; font-size:13px; border-radius:8px; margin-bottom:15px;">▶ Reproducir todo</button>
+                <div>${h}</div>
+                <button class="boton-texto texto-rojo" onclick="eliminarListaLocal('${id}', '${cat}')" style="width:100%; margin-top:20px; font-size:13px;">🗑 Eliminar lista entera</button>
             `;
         };
     });
 }
-
 function añadirAudiosALista(idL, cat) { const inp = document.createElement("input"); inp.type = "file"; inp.accept = "audio/*"; inp.multiple = true; inp.onchange = () => { const fs = Array.from(inp.files); if (fs.length === 0) return; initAudioDB(() => { const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios"); fs.forEach(f => st.put({ id: "audio_" + Date.now() + "_" + Math.floor(Math.random() * 1000), listaId: idL, nombre: f.name, blob: f })); tx.oncomplete = () => { aviso("✅ Añadidos."); verListaLocal(idL, cat); }; }); }; inp.click(); }
 function añadirEnlaceAudio(idL, cat) {
     const url = document.getElementById(`urlAudio_${idL}`).value.trim(); 
     if (!url) return; 
-    const nombre = prompt("Ponle un nombre a este audio (ej: Podcast de running):", "Nuevo audio");
+    const nombre = prompt("Ponle un nombre a este audio:", "Nuevo audio");
     if (nombre === null) return;
     const nombreFinal = nombre.trim() || "Audio sin nombre";
     initAudioDB(() => { 
@@ -1002,103 +1273,87 @@ function cerrarReproductor() { if(audioGlobal) { audioGlobal.pause(); audioGloba
 function detectarTipoVideo(url) { let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/); return m ? { tipo: "youtube", id: m[1] } : { tipo: "desconocido", src: url }; }
 
 function mostrarPodcasts() {
-    const l = podcastsGuardados.length === 0 ? `<p>No hay podcasts guardados.</p>` : podcastsGuardados.map(p => `
-        <div class="tarjeta-rutina" style="margin-bottom: 15px;">
-            <h3 style="margin-top:0;">🎙 ${escaparHTML(p.nombre)}</h3>
-            <div style="display:flex; gap:10px;">
-                <button class="boton-texto texto-azul" onclick="reproducirPodcast('${p.url}')">▶ Reproducir</button>
-                <button class="boton-texto" onclick="navigator.clipboard.writeText('${p.url}'); aviso('Copiado.');">📋 Copiar</button>
-                <button class="boton-texto texto-rojo" onclick="eliminarPodcast('${p.id}')">🗑 Eliminar</button>
+    guardarScroll();
+    const l = podcastsGuardados.length === 0 ? `<p style="text-align:center;">No hay podcasts guardados.</p>` : podcastsGuardados.map(p => `
+        <div class="item-mini">
+            <span style="font-size:14px; color:var(--text-main);">🎙 ${escaparHTML(p.nombre)}</span>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-mini-accion" style="color:var(--accent);" onclick="reproducirPodcast('${p.url}')">▶</button>
+                <button class="btn-mini-accion" style="color:#EF4444;" onclick="eliminarPodcast('${p.id}')">🗑</button>
             </div>
         </div>
     `).join("");
-    contenido.innerHTML = `<span data-vista="podcasts" hidden></span><h2>Podcasts Guardados</h2><button onclick="mostrarFormularioPodcast()" class="boton-mini" style="margin-bottom:15px; background:#3B82F6; color:white;">+ Añadir podcast</button>${l}`;
-    restaurarScroll(); // <--- Restaura la posición
+    contenido.innerHTML = `<h2>Podcasts Guardados</h2><button onclick="mostrarFormularioPodcast()" class="boton-mini" style="background:#3B82F6; color:white; width:70%; margin: 0 auto 15px auto; display:block; padding:8px; font-size:13px;">+ Añadir podcast</button>${l}`;
+    restaurarScroll();
 }
-
-function mostrarFormularioPodcast() {
-    guardarScroll(); // <--- Guarda la posición
-    contenido.innerHTML = `
-        <button class="boton-texto" onclick="mostrarPodcasts()" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
-        <h2>Nuevo Podcast</h2>
-        <label>Nombre</label><input type="text" id="podNombre">
-        <label>Enlace directo (.mp3)</label><input type="url" id="podUrl" placeholder="https://ejemplo.com/audio.mp3">
-        <button onclick="guardarPodcast()" class="boton-mini" style="margin-top:20px; background:#10B981; color:white;">Guardar podcast</button>
-    `;
+function mostrarFormularioPodcast() { 
+    guardarScroll();
+    contenido.innerHTML = `<button class="boton-texto" onclick="mostrarPodcasts()" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>Nuevo Podcast</h2><label>Nombre</label><input type="text" id="podNombre"><label>Enlace directo (.mp3)</label><input type="url" id="podUrl" placeholder="https://ejemplo.com/audio.mp3"><button onclick="guardarPodcast()" class="boton-mini" style="margin-top:20px; background:#10B981; color:white;">Guardar podcast</button>`; 
 }
-function guardarPodcast() { const n = document.getElementById("podNombre").value.trim(), u = document.getElementById("podUrl").value.trim(); if (!n || !u) { alert("Pon nombre y enlace."); return; } podcastsGuardados.push({ id: generarId(), nombre: n, url: u }); guardarDatos(); volverAtras(); }
+function guardarPodcast() { const n = document.getElementById("podNombre").value.trim(), u = document.getElementById("podUrl").value.trim(); if (!n || !u) { alert("Pon nombre y enlace."); return; } podcastsGuardados.push({ id: generarId(), nombre: n, url: u }); guardarDatos(); mostrarPodcasts(); }
 function reproducirPodcast(url) { audioGlobal.src = url; audioGlobal.play(); document.getElementById('player-titulo').innerText = "Podcast"; document.getElementById('btn-play-pause').innerText = "⏸"; floatingPlayer.style.display = "flex"; }
 function eliminarPodcast(id) { confirmar("¿Eliminar?", () => { podcastsGuardados = podcastsGuardados.filter(x => x.id !== id); guardarDatos(); mostrarPodcasts(); }); }
 
 function mostrarVideos() {
-    const l = videosGuardados.length === 0 ? `<p>No hay vídeos guardados.</p>` : videosGuardados.map(v => `
-        <div class="tarjeta-rutina" style="margin-bottom: 15px;">
-            <h3 style="margin-top:0; cursor:pointer; display:flex; justify-content:space-between; align-items:center;" onclick="toggleConfirmacionVideo('${v.id}')">
-                <span>🎥 ${escaparHTML(v.nombre)}</span>
-                <span style="font-size:16px; opacity:0.7;">🗑</span>
-            </h3>
-            <div id="confirm_${v.id}" style="display:none; margin-top:10px; padding:12px; background:var(--bg-main); border-radius:10px; border: 1px solid var(--border-color);">
-                <p style="margin:0 0 10px 0; font-size:14px; color:var(--text-main);">¿Quieres eliminar este vídeo?</p>
-                <div style="display:flex; gap:10px;">
-                    <button onclick="eliminarVideoDirecto('${v.id}')" style="background:#10B981; color:white; flex:1; padding:8px;">Sí</button>
-                    <button onclick="toggleConfirmacionVideo('${v.id}')" style="background:#EF4444; color:white; flex:1; padding:8px;">No</button>
-                </div>
-            </div>
-            <div id="player_${v.id}"></div>
-            <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="boton-texto texto-azul" onclick="reproducirVideoEnLista('${v.id}', '${v.url}')">▶ Reproducir</button>
+    guardarScroll();
+    const l = videosGuardados.length === 0 ? `<p style="text-align:center;">No hay vídeos guardados.</p>` : videosGuardados.map(v => `
+        <div class="item-mini">
+            <span style="font-size:14px; color:var(--text-main);">🎥 ${escaparHTML(v.nombre)}</span>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-mini-accion" style="color:var(--accent);" onclick="reproducirVideoEnLista('${v.id}', '${v.url}')">▶</button>
+                <button class="btn-mini-accion" style="color:#EF4444;" onclick="toggleConfirmacionVideo('${v.id}')">🗑</button>
             </div>
         </div>
+        <div id="confirm_${v.id}" style="display:none; padding:8px; background:var(--bg-main); border-radius:8px; margin-top:5px; border:1px solid var(--border-color);">
+            <p style="margin:0 0 5px 0; font-size:11px;">¿Eliminar vídeo?</p>
+            <div style="display:flex; gap:5px;">
+                <button onclick="eliminarVideoDirecto('${v.id}')" style="background:#10B981; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">Sí</button>
+                <button onclick="toggleConfirmacionVideo('${v.id}')" style="background:#EF4444; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">No</button>
+            </div>
+        </div>
+        <div id="player_${v.id}" style="margin-bottom:10px;"></div>
     `).join("");
     
     contenido.innerHTML = `
-        <span data-vista="video" hidden></span>
         <h2>Vídeos Guardados</h2>
-        <button onclick="mostrarFormularioVideo()" style="background:#EF4444; width: 75%; margin: 0 auto 20px auto; display: block; padding: 10px; font-size: 14px; border-radius: var(--radio); font-weight: normal; color: white; box-shadow: var(--sombra);">+ Añadir vídeo</button>
+        <button onclick="mostrarFormularioVideo()" style="background:#EF4444; width: 70%; margin: 10px auto 15px auto; display: block; padding: 8px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">+ Añadir vídeo</button>
         ${l}
     `;
-    restaurarScroll(); // <--- Restaura la posición
+    restaurarScroll();
 }
-
 function toggleConfirmacionVideo(id) { const div = document.getElementById(`confirm_${id}`); if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none'; }
 function eliminarVideoDirecto(id) { videosGuardados = videosGuardados.filter(x => x.id !== id); guardarDatos(); mostrarVideos(); aviso("🗑 Vídeo eliminado."); }
 function reproducirVideoEnLista(id, url) { const info = detectarTipoVideo(url); const div = document.getElementById(`player_${id}`); if (!div) return; if (div.innerHTML !== "") { div.innerHTML = ""; return; } if (info.tipo === "youtube") { div.innerHTML = `<iframe width="100%" height="220" src="https://www.youtube.com/embed/${info.id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen frameborder="0" style="border-radius:12px; margin-top:10px;"></iframe>`; } else { div.innerHTML = `<p>Enlace no válido.</p>`; } }
-function mostrarFormularioVideo() {
-    guardarScroll(); // <--- Guarda la posición
-    contenido.innerHTML = `
-        <button class="boton-texto" onclick="mostrarVideos()" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
-        <h2>Nuevo vídeo</h2>
-        <label>Nombre</label><input type="text" id="videoNombre">
-        <label>Enlace de YouTube</label><input type="url" id="videoUrl">
-        <button onclick="guardarVideo()" class="boton-mini" style="margin-top:20px; background:#10B981; color:white;">Guardar vídeo</button>
-    `;
+function mostrarFormularioVideo() { 
+    guardarScroll();
+    contenido.innerHTML = `<button class="boton-texto" onclick="mostrarVideos()" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>Nuevo vídeo</h2><label>Nombre</label><input type="text" id="videoNombre"><label>Enlace de YouTube</label><input type="url" id="videoUrl"><button onclick="guardarVideo()" class="boton-mini" style="margin-top:20px; background:#10B981; color:white;">Guardar vídeo</button>`; 
 }
-function guardarVideo() { const n = document.getElementById("videoNombre").value.trim(), u = document.getElementById("videoUrl").value.trim(); if (!n || !u) { alert("Pon nombre y enlace."); return; } videosGuardados.push({ id: "video_" + Date.now(), nombre: n, url: u }); guardarDatos(); volverAtras(); }
+function guardarVideo() { const n = document.getElementById("videoNombre").value.trim(), u = document.getElementById("videoUrl").value.trim(); if (!n || !u) { alert("Pon nombre y enlace."); return; } videosGuardados.push({ id: "video_" + Date.now(), nombre: n, url: u }); guardarDatos(); mostrarVideos(); }
 
 /* =====================================================
-   AJUSTES
+   AJUSTES (CORREGIDO)
 ===================================================== */
 let ajusteAbierto = "";
-const paletaColores = [["#FF6B6B","Coral"], ["#2196F3","Azul"], ["#10B981","Verde"], ["#F59E0B","Amarillo"], ["#8B5CF6","Morado"], ["#EF4444","Rojo"], ["#EC4899","Rosa"], ["#14B8A6","Turquesa"], ["#F97316","Naranja"], ["#0F172A","Oscuro"], ["#FFFFFF","Blanco"]];
 
 function mostrarAjustes() {
-    const t = [["claro", "Claro"], ["oscuro", "Oscuro"], ["oled", "Negro"]], l = [["pequenia", "Pequeña"], ["mediana", "Normal"], ["grande", "Grande"]];
+    const t = [["claro", "Claro"], ["oscuro", "Oscuro"], ["oled", "Negro"], ["bicolor", "Bicolor"]]; 
+    const l = [["pequenia", "Pequeña"], ["mediana", "Normal"], ["grande", "Grande"]];
     const f = [["recto", "Recto"], ["redondeado", "Redondeado"], ["pastilla", "Pastilla"], ["circulo", "Círculo"]];
     const hayMenuPersonal = colorMenuGlobal !== "" || Object.keys(coloresMenu).length > 0;
     const colorObjetivo = menuSeleccionado === "todos" ? (colorMenuGlobal || colorActual) : colorDeBoton(menuSeleccionado);
+    
     const aj = (k, ti, va, cu) => `<details class="ajuste" ${ajusteAbierto === k ? "open" : ""} ontoggle="if(this.open){ajusteAbierto='${k}'}else if(ajusteAbierto==='${k}'){ajusteAbierto=''}"><summary>${ti}<small>${va}</small></summary><div style="padding:10px;">${cu}</div></details>`;
     const btnO = (v, tx, ac, fn) => `<button onclick="${fn}('${v}')" style="background:${v === ac ? 'var(--accent)' : 'var(--bg-main)'}; color:${v === ac ? 'white' : 'var(--text-main)'}; border:1px solid var(--border-color); padding:12px; border-radius:var(--radio); width:100%; margin-top:10px; text-align:left;">${tx}</button>`;
-    const htmlPaleta = (actual, funcion) => `<div class="grupo-colores" style="display:flex; flex-wrap:wrap; gap:10px;">${paletaColores.map(c => `<button class="muestra-color ${actual === c[0] ? 'activo' : ''}" style="background:${c[0]};" onclick="${funcion}('${c[0]}')"></button>`).join("")}</div><label>Otro color</label><input type="color" value="${actual || "#FF6B6B"}" onchange="${funcion}(this.value)">`;
+    const htmlPaleta = (actual, funcion) => `<div class="grupo-colores" style="display:flex; flex-wrap:wrap; gap:10px;">${paletaColores.map(c => `<button class="muestra-color ${actual === c[0] ? 'activo' : ''}" style="background:${c[0]};" onclick="${funcion}('${c[0]}')"></button>`).join("")}</div><label>Otro color</label><input type="color" value="${actual || '#FF6B6B'}" onchange="${funcion}(this.value)">`;
     const chipsMenu = [["todos", "Todos"]].concat(botonesMenu).map(b => `<button class="chip chip-medida ${b[0] === menuSeleccionado ? "activo" : ""}" onclick="elegirBotonMenu('${b[0]}')">${b[1]}</button>`).join("");
 
-    contenido.innerHTML = `<span data-vista="ajustes" hidden></span><h2>Ajustes y personalización</h2>
+    contenido.innerHTML = `<h2>Ajustes y personalización</h2>
         ${aj("tema", "Tema visual", temaActual, t.map(x => btnO(x[0], x[1], temaActual, "cambiarTemaApp")).join(""))}
         ${aj("letra", "Tamaño de letra", letraActual, l.map(x => btnO(x[0], x[1], letraActual, "cambiarTamanioLetra")).join(""))}
         ${aj("forma", "Forma de los botones", formaBotones, f.map(x => btnO(x[0], x[1], formaBotones, "cambiarFormaBotones")).join(""))}
         ${aj("opacidad", "Opacidad del color", Math.round(opacidadColor * 100) + "%", `<p style="margin-bottom:10px;">Ajusta la transparencia de los colores.</p><input type="range" min="10" max="100" value="${opacidadColor * 100}" oninput="cambiarOpacidad(this.value)" style="width:100%; accent-color: var(--accent);">`)}
         ${aj("color", "Color de diseño", "Elegido", htmlPaleta(colorActual, "cambiarColorPrincipal"))}
         ${aj("menu", "Color de botones", hayMenuPersonal ? "Personalizado" : "Como el diseño", `<p>Elige qué botón quieres cambiar, o «Todos».</p><div class="selector-chips">${chipsMenu}</div><p class="texto-ultima">Cambiando: <strong>${menuSeleccionado === "todos" ? "todos" : botonesMenu.find(b => b[0] === menuSeleccionado)[1]}</strong></p>${htmlPaleta(colorObjetivo, "cambiarColorBoton")}<button onclick="restaurarColoresMenu()" style="width:100%; margin-top:12px; background:#3B82F6;">Usar color del diseño en todos</button>`)}
-        ${aj("base", "Ejercicios base", ejerciciosOcultos.length === 0 ? "Todos" : ejerciciosOcultos.length + " eliminados", `<p>${ejerciciosOcultos.length === 0 ? "Tienes todos los ejercicios base." : `Has eliminado ${ejerciciosOcultos.length} ejercicio(s) base.`}</p><button onclick="restaurarEjerciciosBase()" style="width:100%; background:#10B981;">Recuperar ejercicios base eliminados</button>`)}
         ${aj("version", "Actualizaciones", "v" + APP_VERSION, `<button onclick="buscarActualizaciones()" style="width:100%;background:#10B981;">🔄 Buscar actualizaciones</button>`)}
         ${aj("copia", "Copia de seguridad", "", `<button onclick="exportarDatos()" style="width:100%;">Descargar copia</button><button onclick="importarDatos()" style="width:100%;margin-top:10px;">Importar copia (pegar)</button>`)}
     `;
@@ -1140,4 +1395,5 @@ function procesarEnlaceCompartido() {
     } else {
         confirmar("Has compartido un enlace. ¿Quieres abrirlo?", () => { abrirEnlace(enlace); });
     }
-            }
+}
+
