@@ -1,15 +1,31 @@
-const CACHE_NAME = 'entrenamiento-v13';
-const ARCHIVOS = ['./', './index.html', './style.css', './script.js', './manifest.json'];
+const CACHE_NAME = 'entrenamiento-v13'; // <--- Cambia este número cada vez que subas algo
+const ARCHIVOS = [
+    './',
+    './index.html',
+    './style.css',
+    './script.js',
+    './manifest.json'
+];
 
+// Al instalar, guarda los archivos pero NO toma el control
 self.addEventListener('install', function(e) {
-    self.skipWaiting();
-    e.waitUntil(caches.open(CACHE_NAME).then(function(cache) { return cache.addAll(ARCHIVOS); }));
+    e.waitUntil(
+        caches.open(CACHE_NAME).then(function(cache) {
+            return cache.addAll(ARCHIVOS);
+        })
+    );
 });
 
+// Al activar, borra las cachés viejas
 self.addEventListener('activate', function(e) {
-    e.waitUntil(caches.keys().then(function(claves) {
-        return Promise.all(claves.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); }));
-    }).then(function() { return self.clients.claim(); }));
+    e.waitUntil(
+        caches.keys().then(function(claves) {
+            return Promise.all(
+                claves.filter(function(k) { return k !== CACHE_NAME; })
+                      .map(function(k) { return caches.delete(k); })
+            );
+        })
+    );
 });
 
 self.addEventListener('fetch', function(e) {
@@ -29,5 +45,7 @@ self.addEventListener('fetch', function(e) {
     }
 });
 
-self.addEventListener('message', function(e) { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });
-
+// Escucha cuando le damos al botón de actualizar
+self.addEventListener('message', function(e) {
+    if (e.data === 'SKIP_WAITING') self.skipWaiting();
+});
