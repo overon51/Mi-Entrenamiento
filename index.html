@@ -6,7 +6,6 @@
     <title>Mi Entrenamiento</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <!-- El color de la barra superior del móvil (azul oscuro) -->
     <meta name="theme-color" content="#0F172A">
 </head>
 <body>
@@ -16,8 +15,11 @@
     </header>
 
     <main>
-        <section class="menu">
-            <button onclick="mostrar('inicio')">Inicio</button>
+        <!-- Aquí irán los cuadros de Inicio (Dashboard) -->
+        <section id="inicio-panel"></section>
+
+        <!-- Menú principal (1 columna) -->
+        <section class="menu" id="menu-principal">
             <button onclick="mostrar('ejercicios')">Ejercicios</button>
             <button onclick="mostrar('rutinas')">Rutinas</button>
             <button onclick="mostrar('progreso')">Progreso</button>
@@ -30,7 +32,8 @@
             <button class="boton-ajustes" onclick="mostrar('ajustes')">⚙️ Ajustes</button>
         </section>
 
-        <section id="contenido"></section>
+        <!-- Contenedor dinámico para el contenido de cada botón -->
+        <section id="contenido" style="display: none;"></section>
     </main>
 
     <div id="aviso"></div>
