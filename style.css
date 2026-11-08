@@ -41,6 +41,16 @@ body.tema-claro {
     --dia-fondo: #FFFFFF;
 }
 
+body.tema-bicolor {
+    --bg-main: #1A1B41;
+    --bg-card: #2D2E5A;
+    --bg-box: #3D3E73;
+    --text-main: #FFFFFF;
+    --text-muted: #B0B3D6;
+    --border-color: #4B4C8A;
+    --dia-fondo: #2D2E5A;
+}
+
 body.letra-pequenia { --escala: 0.88; }
 body.letra-mediana { --escala: 1; }
 body.letra-grande { --escala: 1.15; }
@@ -72,19 +82,27 @@ p, label, td, th { color: var(--text-muted); line-height: 1.4; font-size: 14px; 
     gap: 8px;
     margin-bottom: 20px; 
 }
+
 .menu button, .menu .boton-ajustes { 
-    background: var(--bg-box); 
+    /* Sin background aquí para que JS pueda cambiarlo */
     color: var(--text-main); 
     width: 100%;
     min-height: 45px; 
     display: flex; 
-    justify-content: center; /* <-- AQUÍ ESTÁ EL CAMBIO: de flex-start a center */
+    justify-content: center;
     align-items: center; 
     border: none; 
     border-radius: var(--radio); 
     font-size: calc(14px * var(--escala)); 
     font-weight: 600; 
-    padding: 10px; /* <-- Cambiado para que no quede espacio extra a la izquierda */
+    padding: 10px; 
+    cursor: pointer;
+    box-shadow: none;
+}
+
+/* El botón de Ajustes siempre se queda gris */
+.menu .boton-ajustes {
+    background: #536174 !important;
 }
 
 /* ===== CONTENIDO DINÁMICO ===== */
@@ -108,7 +126,7 @@ button:active { opacity: 0.7; }
 .boton-texto.texto-rojo { color: #EF4444 !important; }
 .boton-texto.texto-azul { color: var(--accent) !important; }
 
-/* ===== DASHBOARD INICIO (2 COLUMNAS Y EXPANDIBLES) ===== */
+/* ===== DASHBOARD INICIO ===== */
 .inicio-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -128,7 +146,7 @@ button:active { opacity: 0.7; }
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 80px; /* Más pequeñas */
+    min-height: 80px;
 }
 .tarjeta-inicio.expandida {
     grid-column: 1 / -1;
@@ -138,11 +156,15 @@ button:active { opacity: 0.7; }
 .tarjeta-inicio p { font-size: 11px; margin: 0; }
 .tarjeta-inicio .icono-grande { font-size: 24px; margin-bottom: 5px; }
 
-/* ===== TARJETAS GENERALES ===== */
+/* ===== TARJETAS GENERALES (COMPACTAS) ===== */
 .tarjeta-ejercicio, .tarjeta-rutina, .panel-correr, .ajuste, .caja-grafica, .dato-resumen {
-    background: var(--bg-card); padding: 14px; border-radius: 14px; margin-top: 10px; border: 1px solid var(--border-color);
+    background: var(--bg-card); 
+    padding: 10px 12px; 
+    border-radius: 12px; 
+    margin-top: 6px; 
+    border: 1px solid var(--border-color);
 }
-.tarjeta-ejercicio h3, .tarjeta-rutina h3 { margin: 0 0 5px 0; font-size: 15px; color: var(--text-main); }
+.tarjeta-ejercicio h3, .tarjeta-rutina h3 { margin: 0 0 4px 0; font-size: 14px; color: var(--text-main); }
 .etiqueta { background: var(--bg-box); color: var(--text-muted); padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
 
 /* ===== INPUTS ===== */
@@ -161,12 +183,20 @@ button:active { opacity: 0.7; }
 .chip-ejercicio.activo, .chip.activo { border-color: var(--accent); color: var(--accent); }
 
 /* ===== CRONÓMETRO Y LUCES ===== */
-.reloj { background: var(--bg-main); padding: 20px; border-radius: 20px; text-align: center; border: 4px solid transparent; transition: border-color 0.3s, box-shadow 0.3s; }
+.reloj { background: var(--bg-main); padding: 15px; border-radius: 20px; text-align: center; border: 4px solid transparent; transition: border-color 0.3s, box-shadow 0.3s; }
 #tiempo { font-size: 48px; font-weight: 800; color: var(--text-main); margin: 10px; font-family: monospace; letter-spacing: -2px; }
 .botones-reloj, .grid-opciones-descanso { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
-.boton-iniciar { background: #10B981 !important; color: white !important; }
-.boton-pausar { background: #EF4444 !important; color: white !important; }
-.grid-opciones-descanso button { background: #3B82F6 !important; color: white !important; }
+.boton-iniciar { background: #10B981 !important; color: white !important; border: none; }
+.boton-pausar { background: #EF4444 !important; color: white !important; border: none; }
+.grid-opciones-descanso button { background: #3B82F6 !important; color: white !important; border: none; }
+
+/* Botones compactos de descanso */
+.botones-reloj button, .grid-opciones-descanso button {
+    min-height: 35px !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+    border-radius: 8px !important;
+}
 
 .reloj.brillo-verde { border-color: #10B981; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.5), 0 0 40px 15px rgba(16, 185, 129, 0.7); }
 .reloj.brillo-rojo { border-color: #EF4444; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.5), 0 0 40px 15px rgba(239, 68, 68, 0.7); }
@@ -216,18 +246,13 @@ button:active { opacity: 0.7; }
 .fila-registro .datos { flex: 1; font-size: 12px; color: var(--text-main); font-weight: 500; }
 .fila-registro .btn-borrar-mini { background: transparent; border: none; color: #EF4444; font-size: 14px; padding: 5px; cursor: pointer; }
 
-/* Ajustes */
-.ajuste summary { padding: 12px; font-weight: 600; color: var(--text-main); cursor: pointer; font-size: 14px;}
-.muestra-color { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;}
-.muestra-color.activo { border-color: var(--text-main); }
-
-/* Listas minimalistas */
+/* ===== LISTAS MINIMALISTAS (Música, Vídeo, Historial) ===== */
 .item-mini {
     background: var(--bg-main);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -244,114 +269,37 @@ button:active { opacity: 0.7; }
 }
 .btn-mini-accion:active { opacity: 0.7; }
 
-/* ===== TEMA BICOLOR ===== */
-body.tema-bicolor {
-    --bg-main: #1A1B41;      /* Fondo azul noche */
-    --bg-card: #2D2E5A;      /* Tarjetas moradas */
-    --bg-box: #3D3E73;       /* Cajas más claras */
-    --text-main: #FFFFFF;
-    --text-muted: #B0B3D6;
-    --border-color: #4B4C8A;
-    --dia-fondo: #2D2E5A;
-}
+/* ===== AJUSTES ===== */
+.ajuste summary { padding: 12px; font-weight: 600; color: var(--text-main); cursor: pointer; font-size: 14px;}
+.muestra-color { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; cursor: pointer;}
+.muestra-color.activo { border-color: var(--text-main); }
 
-/* Modal flotante estilo Bottom Sheet (sale desde abajo) */
-.modal-fondo {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    z-index: 2000;
-}
-.modal-caja {
-    background: var(--bg-card);
-    width: 100%;
-    border-radius: 20px 20px 0 0;
-    padding: 20px;
-    padding-bottom: 30px;
-    animation: subirModal 0.3s ease-out;
-}
-@keyframes subirModal {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-}
-
-/* =====================================================
-   REGLA GLOBAL: TARJETAS MÁS COMPACTAS
-   ===================================================== */
-
-/* Hacemos que todas las tarjetas principales sean más finas */
-.tarjeta-ejercicio, 
-.tarjeta-rutina, 
-.panel-correr, 
-.ajuste, 
-.caja-grafica, 
-.dato-resumen {
-    padding: 10px 12px !important; /* Reducimos el relleno interno */
-    margin-top: 6px !important;     /* Menos espacio entre tarjetas */
-    border-radius: 12px !important;
-}
-
-/* Ajustamos los títulos dentro de las tarjetas para que no ocupen tanto */
-.tarjeta-ejercicio h3, 
-.tarjeta-rutina h3 {
-    font-size: 14px !important;
-    margin: 0 0 4px 0 !important;
-}
-
-/* Hacemos los párrafos y textos secundarios un pelín más pequeños */
-.tarjeta-ejercicio p, 
-.tarjeta-rutina p,
-.etiqueta {
-    font-size: 12px !important;
-    margin-bottom: 2px;
-}
-
-/* Compactamos las listas (Música, Podcasts, Vídeos y el nuevo Historial) */
-.item-mini {
-    padding: 8px 12px !important;
-    margin-bottom: 6px !important;
-}
-
-/* Compactamos los datos resumen (como los de Progreso y Cardio) */
-.dato-resumen {
-    padding: 8px !important;
-}
-.dato-resumen strong {
-    font-size: 20px !important;
-}
-.dato-resumen span {
-    font-size: 11px !important;
-}
-
-/* Compactamos el menú desplegable de Ajustes */
-.ajuste summary {
-    padding: 10px 12px !important;
-    font-size: 14px !important;
-}
-
-/* =====================================================
-   BOTONES COMPACTOS EN CRONÓMETRO Y ENTRENAMIENTO
-   ===================================================== */
-.botones-reloj button,
-.grid-opciones-descanso button {
-    min-height: 35px !important;
-    padding: 6px 10px !important;
-    font-size: 13px !important;
-    border-radius: 8px !important;
-}
-
-/* Hacer que los botones de Normal/Circuito vayan uno al lado del otro */
-.selector-chips {
+/* ===== ARREGLO DE LA PALETA DE COLORES ===== */
+.grupo-colores {
     display: flex !important;
-    flex-direction: row !important;
-    gap: 8px !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    justify-content: center !important;
+    padding: 15px 0 !important;
 }
-.selector-chips button {
-    flex: 1 !important;
-    padding: 8px !important;
-    font-size: 13px !important;
-    border-radius: 8px !important;
+
+.grupo-colores button.muestra-color {
+    width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+    border: 3px solid transparent !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    transition: transform 0.2s;
 }
+
+.grupo-colores button.muestra-color.activo {
+    border-color: #ffffff !important;
+    transform: scale(1.2);
+}
+
