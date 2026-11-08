@@ -560,26 +560,43 @@ function verRutina(i) {
     const r = rutinas[i]; if (!r) return;
     let html = `<button class="boton-texto" onclick="mostrarRutinas()" style="color: var(--accent); font-size: 16px; margin-bottom: 15px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${escaparHTML(r.nombre)}</h2><label>Nombre</label><input type="text" id="rutNombre" value="${escaparHTML(r.nombre)}"><div id="ejerciciosDeRutina" style="margin-top:15px;">`;
     
-    if (r.ejercicios.length === 0) html += "<p>Sin ejercicios.</p>";
-    else r.ejercicios.forEach((item, pos) => {
-        const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
-        html += `
-            <div class="tarjeta-rutina" style="padding: 8px 12px; margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-size: 13px; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px;">${escaparHTML(e.nombre)}</h3>
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <input type="number" id="rutS_${pos}" value="${item.series}" style="width: 35px; padding: 4px; text-align: center; margin: 0; font-size: 13px;">
-                    <span style="color: var(--text-muted); font-size: 12px;">x</span>
-                    <input type="number" id="rutR_${pos}" value="${item.repeticiones}" style="width: 35px; padding: 4px; text-align: center; margin: 0; font-size: 13px;">
+    if (r.ejercicios.length === 0) {
+        html += "<p>Sin ejercicios.</p>";
+    } else {
+        r.ejercicios.forEach((item, pos) => {
+            const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); 
+            if (!e) return;
+            
+            html += `
+                <div class="tarjeta-rutina" style="padding: 10px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box;">
+                    
+                    <!-- FILA 1: NOMBRE Y PAPELERA -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;">
+                        <!-- Aquí está el truco para que el nombre ocupe 1 sola línea -->
+                        <h3 style="font-size: 14px; margin: 0; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${escaparHTML(e.nombre)}</h3>
+                        <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${pos})" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; background: transparent; border: none; cursor: pointer; border-radius: 50%;">🗑</button>
+                    </div>
+                    
+                    <!-- FILA 2: SERIES Y REPETICIONES -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-main); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">Series x Reps</span>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <input type="number" id="rutS_${pos}" value="${item.series}" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 14px; border-radius: 6px; border: none; background: rgba(0,0,0,0.2); color: var(--accent); font-weight: bold;">
+                            <span style="color: var(--text-muted); font-size: 14px;">x</span>
+                            <input type="number" id="rutR_${pos}" value="${item.repeticiones}" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 14px; border-radius: 6px; border: none; background: rgba(0,0,0,0.2); color: var(--accent); font-weight: bold;">
+                        </div>
+                    </div>
                 </div>
-                <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${pos})" style="padding: 5px; margin: 0 0 0 10px;">🗑</button>
-            </div>
-        `;
-    });
+            `;
+        });
+    }
+    
     html += `</div>
-        <button style="width:100%;margin-top:15px;background:#3B82F6;" onclick="guardarEdicionRutina(${i}, 'selector')">+ Añadir ejercicio</button>
-        <button style="width:100%;margin-top:10px;background:#10B981;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button>
-        <button style="width:100%;margin-top:10px;background:#FF6B6B;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button>
-        <button class="boton-borrar" style="width:100%;margin-top:10px; background:#EF4444; color:white; border-radius:var(--radio);" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
+        <button style="width:100%;margin-top:15px;background:#3B82F6;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;" onclick="guardarEdicionRutina(${i}, 'selector')">+ Añadir ejercicio</button>
+        <button style="width:100%;margin-top:10px;background:#10B981;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button>
+        <button style="width:100%;margin-top:10px;background:#FF6B6B;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button>
+        <button class="boton-texto texto-rojo" style="width:100%;margin-top:15px;font-size:13px;" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
+        
     contenido.innerHTML = html;
 }
 
@@ -1269,7 +1286,6 @@ function verListaLocal(id, cat) {
         rq.onsuccess = () => {
             const auds = rq.result.filter(a => a.listaId === id);
             
-            // Lista de canciones con botones redondos perfectos
             const h = auds.length === 0 ? `<p>Lista vacía.</p>` : auds.map(a => `
                 <div class="item-mini" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
@@ -1292,21 +1308,21 @@ function verListaLocal(id, cat) {
                 <button class="boton-texto" onclick="mostrarMusica('${cat}')" style="color: var(--accent); font-size: 14px; margin-bottom: 15px; font-weight: bold; padding: 0;">◀ Volver</button>
                 <h2>${escaparHTML(l.nombre)}</h2>
                 
-                <div class="tarjeta-rutina" style="flex-direction:column; align-items:stretch; gap:10px; margin-bottom:15px; padding:15px;">
+                <div class="tarjeta-rutina" style="flex-direction:column; align-items:stretch; gap:15px; margin-bottom:15px; padding:15px;">
+                    
+                    <!-- BOTÓN SUBIR ARCHIVO -->
                     <div>
-                        <label style="margin:0; font-size:12px; color:var(--text-muted);">Añadir archivo</label>
+                        <label style="margin:0; font-size:12px; color:var(--text-muted); font-weight:bold;">Añadir archivo</label>
                         <button onclick="añadirAudiosALista('${id}', '${cat}')" style="background:#10B981; color:white; width:100%; padding:10px; font-size:13px; margin-top:5px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">+ Subir audio</button>
                     </div>
                     
+                    <!-- PEGAR ENLACE (Diseño arreglado: input arriba, botón abajo) -->
                     <div>
-                        <label style="margin:0; font-size:12px; color:var(--text-muted);">O pegar enlace (.mp3)</label>
-                        <div style="display:flex; gap:8px; margin-top:5px; width:100%;">
-                            <!-- Aquí está el arreglo del cuadro de texto -->
-                            <input type="url" id="urlAudio_${id}" placeholder="Pega el enlace aquí..." style="flex:1; min-width:0; padding:10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); outline:none;">
-                            <!-- Aquí está el arreglo del botón Añadir -->
-                            <button onclick="añadirEnlaceAudio('${id}', '${cat}')" style="background:#3B82F6; color:white; padding:0 15px; font-size:13px; border-radius:8px; border:none; flex-shrink:0; font-weight:bold; cursor:pointer; height:auto;">Añadir</button>
-                        </div>
+                        <label style="margin:0; font-size:12px; color:var(--text-muted); font-weight:bold;">O pegar enlace (.mp3)</label>
+                        <input type="url" id="urlAudio_${id}" placeholder="Pega el enlace aquí..." style="width:100%; box-sizing:border-box; padding:10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); margin-top:5px; margin-bottom:8px; outline:none;">
+                        <button onclick="añadirEnlaceAudio('${id}', '${cat}')" style="background:#3B82F6; color:white; width:100%; padding:10px; font-size:13px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">Añadir enlace</button>
                     </div>
+                    
                 </div>
 
                 <button onclick="reproducirListaEntera('${id}')" style="background:#3B82F6; color:white; width:100%; padding:10px; font-size:14px; border-radius:8px; margin-bottom:15px; border:none; font-weight:bold; cursor:pointer;">▶ Reproducir todo</button>
