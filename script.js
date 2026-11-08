@@ -1,11 +1,15 @@
 
 const paletaColores = [["#FF6B6B","Coral"], ["#2196F3","Azul"], ["#10B981","Verde"], ["#F59E0B","Amarillo"], ["#8B5CF6","Morado"], ["#EF4444","Rojo"], ["#EC4899","Rosa"], ["#14B8A6","Turquesa"], ["#F97316","Naranja"], ["#0F172A","Oscuro"], ["#FFFFFF","Blanco"]];
 const botonesMenu = [["ejercicios", "Ejercicios"], ["rutinas", "Rutinas"], ["progreso", "Progreso"], ["cronometro", "Cronómetro"], ["correr", "Cardio"], ["calendario", "Calendario"], ["tiempo", "Tiempo"], ["musica", "Música"], ["video", "Vídeos"]];
+let colorBicolorFondo = "#1E293B"; 
+let colorBicolorAcento = "#3B82F6";
 let contenido = null;
 let misEjercicios = [], rutinas = [], historial = [], ejerciciosOcultos = [], medidasCuerpo = [], notasDias = {}, carreras = [], listasMusica = [], videosGuardados = [], podcastsGuardados = [];
 let coloresMenu = {}, colorMenuGlobal = "", menuSeleccionado = "todos";
 let tipoCardio = "correr", vozCorrer = true, alturaCm = 0, temaActual = "claro", letraActual = "mediana", colorActual = "#3B82F6", grupoActual = "";
+let origenCarrera = "correr";
 let formaBotones = "redondeado", opacidadColor = 1;
+
 let metricaActual = "peso", periodoActual = 0;
 let cronoIntervalo = null, cronoModo = "parado", cronoMs = 0, cronoInicio = 0, cronoFin = 0, cronoColor = "";
 let mesActual = new Date().getMonth(), anioActual = new Date().getFullYear(), diaSeleccionado = null;
@@ -15,8 +19,16 @@ let playlistActual = [], indiceCancion = 0;
 let audioGlobal = null, floatingPlayer = null;
 let posicionScroll = 0;
 
-function guardarScroll() { posicionScroll = window.scrollY; }
-function restaurarScroll() { setTimeout(() => { window.scrollTo({ top: posicionScroll, behavior: 'instant' }); }, 10); }
+function guardarScroll() { 
+    posicionScroll = window.scrollY; 
+}
+
+function restaurarScroll() { 
+    window.scrollTo(0, posicionScroll);
+    setTimeout(() => { window.scrollTo(0, posicionScroll); }, 10);
+    setTimeout(() => { window.scrollTo(0, posicionScroll); }, 50);
+    setTimeout(() => { window.scrollTo(0, posicionScroll); }, 100);
+}
 
 document.addEventListener("DOMContentLoaded", function() {
     contenido = document.getElementById("contenido");
@@ -75,6 +87,8 @@ function guardarDatos() {
         localStorage.setItem("vozCorrer", vozCorrer ? "1" : "0"); localStorage.setItem("alturaCm", String(alturaCm));
         localStorage.setItem("temaApp", temaActual); localStorage.setItem("tamanioLetraApp", letraActual); localStorage.setItem("colorApp", colorActual);
         localStorage.setItem("formaBotonesApp", formaBotones); localStorage.setItem("opacidadColorApp", String(opacidadColor));
+      localStorage.setItem("colorBicolorFondo", colorBicolorFondo);
+localStorage.setItem("colorBicolorAcento", colorBicolorAcento);
     } catch (e) { aviso("Error al guardar"); }
 }
 
@@ -84,19 +98,65 @@ function hexToRgba(hex, alpha) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function colorDeBoton(clave) {
+    if (coloresMenu[clave]) return coloresMenu[clave];
+    if (colorMenuGlobal) return colorMenuGlobal;
+    if (temaActual === "bicolor") return localStorage.getItem("colorBicolorAcento") || "#3B82F6";
+    return colorActual;
+}
+
+function esColorClaro(hex) {
+    if (!hex || hex.length !== 7) return false;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 128;
+}
+
 function aplicarPreferencias() {
+    document.body.style.overflowAnchor = "none";
     document.body.className = "";
     if (temaActual === "oscuro") document.body.classList.add("tema-oscuro");
     if (temaActual === "oled") document.body.classList.add("tema-oled");
     if (temaActual === "claro") document.body.classList.add("tema-claro");
     if (temaActual === "bicolor") document.body.classList.add("tema-bicolor");
     document.body.classList.add("letra-" + letraActual);
-    
-    const colorFinal = opacidadColor >= 1 ? colorActual : hexToRgba(colorActual, opacidadColor);
-    document.documentElement.style.setProperty("--accent", colorFinal);
+
+    if (temaActual === "bicolor") {
+        let fondo = localStorage.getItem("colorBicolorFondo") || "#1E293B";
+        let acento = localStorage.getItem("colorBicolorAcento") || "#3B82F6";
+        
+        // Forzamos el color de fondo con !important para que el CSS no lo bloquee
+        document.body.style.setProperty("background-color", fondo, "important");
+        document.documentElement.style.setProperty("--bg-main", fondo, "important");
+        document.documentElement.style.setProperty("--text-main", esColorClaro(fondo) ? "#0F172A" : "#F8FAFC", "important");
+        
+        const colorFinal = opacidadColor >= 1 ? acento : hexToRgba(acento, opacidadColor);
+        document.documentElement.style.setProperty("--accent", colorFinal, "important");
+    } else {
+        // Si no es bicolor, limpiamos los estilos forzados
+        document.body.style.removeProperty("background-color");
+        document.documentElement.style.removeProperty("--bg-main");
+        document.documentElement.style.removeProperty("--text-main");
+        const colorFinal = opacidadColor >= 1 ? colorActual : hexToRgba(colorActual, opacidadColor);
+        document.documentElement.style.setProperty("--accent", colorFinal);
+    }
 
     const formas = { "recto": "4px", "redondeado": "14px", "pastilla": "40px", "circulo": "50%" };
-    document.documentElement.style.setProperty("--radio", formas[formaBotones] || "40px");
+    const radioFinal = formas[formaBotones] || "40px";
+    document.documentElement.style.setProperty("--radio", radioFinal);
+
+    document.querySelectorAll('.menu button').forEach(function(boton) {
+        const onclick = boton.getAttribute('onclick') || '';
+        const m = onclick.match(/mostrar\(\s*['"]([^'"]+)['"]\s*\)/);
+        if (!m) return;
+        const clave = m[1];
+        const cBtn = colorDeBoton(clave);
+        const colorStr = opacidadColor >= 1 ? cBtn : hexToRgba(cBtn, opacidadColor);
+        boton.style.setProperty('background', colorStr, 'important');
+        boton.style.setProperty('color', '#ffffff', 'important');
+        boton.style.setProperty('border-radius', radioFinal, 'important');
+    });
 }
 
 function generarId() { return "id_" + Date.now() + "_" + Math.floor(Math.random() * 1000); }
@@ -1083,38 +1143,8 @@ function terminarCorrer(evento) {
 }
 
 function resumenCarrera(c) { const t = tiposCardio[tipoDe(c)]; const km = (c.distancia || 0) / 1000; return `${t.icono} ${formatoKm(km)} km · ${formatoTiempo(c.duracion)} · ${caloriasDe(c)} kcal`; }
-
-function verCarrera(id, origen) { 
-    guardarScroll();
-    origenCarrera = origen || "correr";
-    const c = carreras.find(x => x.id === id); if (!c) return; 
-    const t = tiposCardio[tipoDe(c)];
-    const km = (c.distancia || 0) / 1000;
-    
-    contenido.innerHTML = `
-        <button class="boton-texto" onclick="mostrarCorrer()" style="color:var(--accent); font-size:16px; margin-bottom:15px; font-weight:bold; padding:0;">◀ Volver</button>
-        <div style="text-align:center; margin-bottom:20px;">
-            <h2 style="margin:0;">${t.icono} ${t.nombre}</h2>
-            <p style="margin:5px 0 0 0;">${formatearFecha(c.fecha)}</p>
-        </div>
-        
-        <div class="tarjeta-rutina" style="text-align:center; padding:20px;">
-            <div style="display:flex; justify-content:space-around; margin-bottom:20px;">
-                <div><h3 style="font-size:28px; margin:0;">${formatoKm(km)}</h3><span style="font-size:12px; color:var(--text-muted);">Distancia (km)</span></div>
-                <div><h3 style="font-size:28px; margin:0;">${formatoTiempo(c.duracion)}</h3><span style="font-size:12px; color:var(--text-muted);">Tiempo</span></div>
-                <div><h3 style="font-size:28px; margin:0;">${caloriasDe(c)}</h3><span style="font-size:12px; color:var(--text-muted);">Kcal</span></div>
-            </div>
-            
-            ${km > 0 ? `<div style="display:flex; justify-content:space-around; border-top:1px solid var(--border-color); padding-top:15px;">
-                <div><h4 style="margin:0;">${t.ritmo ? formatoRitmo(c.duracion / km) : formatoNum(velocidadKmh(c.duracion, c.distancia))}</h4><span style="font-size:12px; color:var(--text-muted);">${t.ritmo ? 'Ritmo Medio' : 'Vel. Media'}</span></div>
-            </div>` : ""}
-        </div>
-        
-        ${t.gps && c.ruta && c.ruta.length > 1 ? htmlRuta(c.ruta) : ""}
-        
-        <button onclick="eliminarCarrera('${c.id}', event)" style="width:100%; margin-top:30px; background:#EF4444; color:white; border:none; border-radius:var(--radio); padding:12px; font-weight:bold; cursor:pointer;">🗑 Eliminar actividad</button>
-    `;
-    restaurarScroll();
+function velocidadKmh(seg, metros) {
+    return seg > 0 ? (metros / 1000) / (seg / 3600) : 0;
 }
 
 function eliminarCarrera(id, evento) {
@@ -1195,30 +1225,22 @@ let dbAudio;
 function initAudioDB(cb) { if (dbAudio) { cb(); return; } const r = indexedDB.open("EntrenamientoAudioDB", 1); r.onupgradeneeded = e => { dbAudio = e.target.result; if (!dbAudio.objectStoreNames.contains("audios")) dbAudio.createObjectStore("audios", { keyPath: "id" }); }; r.onsuccess = e => { dbAudio = e.target.result; cb(); }; }
 
 function mostrarMusica(pestanaActiva) {
-    pestanaActiva = pestanaActiva || "musica"; const esP = pestanaActiva === "podcasts";
+    pestanaActiva = pestanaActiva || "musica";
+    const esP = pestanaActiva === "podcasts";
     const filt = listasMusica.filter(l => l.categoria === pestanaActiva);
-    
+
     let tarjetas = "";
     if (filt.length === 0) {
         tarjetas = `<p style="text-align:center;">No hay listas guardadas.</p>`;
     } else {
         tarjetas = filt.map(l => `
-            <div class="item-mini">
+            <div class="item-mini" onclick="verListaLocal('${l.id}', '${pestanaActiva}')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-size:14px; color:var(--text-main);">${esP ? "🎙" : "🎵"} ${escaparHTML(l.nombre)}</span>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-mini-accion" style="color:var(--accent);" onclick="verListaLocal('${l.id}', '${pestanaActiva}')">Abrir</button>
-                    <button class="btn-mini-accion" onclick="reproducirListaEntera('${l.id}')">▶</button>
-                </div>
-            </div>
-        `).join("");
+                <button onclick="event.stopPropagation(); reproducirListaEntera('${l.id}')" style="background:transparent; border:none; font-size:20px; width:40px; height:40px; padding:0; flex-shrink:0; cursor:pointer; color:var(--accent);">▶</button>
+            </div>`).join("");
     }
 
-    let botonExterno = "";
-    if (esP) {
-        botonExterno = '<button onclick="abrirEnlace(\'https://www.ivoox.com\')" style="background:#E65100; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir iVoox</button>';
-    } else {
-        botonExterno = '<button onclick="abrirEnlace(\'https://music.youtube.com\')" style="background:#EF4444; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir YouTube Music</button>';
-    }
+    let botonExterno = esP ? '<button onclick="abrirEnlace(\'https://www.ivoox.com\')" style="background:#E65100; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir iVoox</button>' : '<button onclick="abrirEnlace(\'https://music.youtube.com\')" style="background:#EF4444; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir YouTube Music</button>';
 
     contenido.innerHTML = `
         <h2>Música y Podcasts 🎵</h2>
@@ -1232,8 +1254,7 @@ function mostrarMusica(pestanaActiva) {
         </div>
         <button onclick="crearListaLocal('${pestanaActiva}')" class="boton-mini" style="background:#3B82F6; color:white; width:70%; margin: 0 auto 15px auto; display:block; padding:8px; font-size:13px;">+ Crear lista de ${esP ? 'podcasts' : 'música'}</button>
         <h3>Mis listas</h3>
-        ${tarjetas}
-    `;
+        ${tarjetas}`;
     restaurarScroll();
 }
 
@@ -1247,64 +1268,64 @@ function verListaLocal(id, cat) {
         const rq = dbAudio.transaction("audios", "readonly").objectStore("audios").getAll();
         rq.onsuccess = () => {
             const auds = rq.result.filter(a => a.listaId === id);
+            
+            // Lista de canciones con botones redondos perfectos
             const h = auds.length === 0 ? `<p>Lista vacía.</p>` : auds.map(a => `
                 <div class="item-mini" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <span style="font-size:14px; font-weight:bold; color:var(--text-main);">${escaparHTML(a.nombre)}</span>
-                        <div style="display:flex; gap:5px;">
-                            <button class="btn-mini-accion" onclick="editarNombreAudio('${a.id}', '${id}', '${cat}')">✏️</button>
-                            <button class="btn-mini-accion" style="color:#EF4444;" onclick="toggleConfirmacionAudio('${a.id}')">🗑</button>
+                        <span style="font-size:14px; font-weight:bold; color:var(--text-main); flex:1; padding-right:10px;">${escaparHTML(a.nombre)}</span>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="editarNombreAudio('${a.id}', '${id}', '${cat}')" style="background:transparent; border:none; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">✏️</button>
+                            <button onclick="toggleConfirmacionAudio('${a.id}')" style="background:transparent; border:none; color:#EF4444; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;">🗑</button>
                         </div>
                     </div>
                     <div id="confirm_audio_${a.id}" style="display:none; width:100%; padding:8px; background:var(--bg-card); border-radius:6px;">
                         <p style="margin:0 0 5px 0; font-size:11px;">¿Eliminar audio?</p>
                         <div style="display:flex; gap:5px;">
-                            <button onclick="eliminarAudioDirecto('${a.id}', '${id}', '${cat}')" style="background:#10B981; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">Sí</button>
-                            <button onclick="toggleConfirmacionAudio('${a.id}')" style="background:#EF4444; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">No</button>
+                            <button onclick="eliminarAudioDirecto('${a.id}', '${id}', '${cat}')" style="background:#10B981; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">Sí</button>
+                            <button onclick="toggleConfirmacionAudio('${a.id}')" style="background:#EF4444; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">No</button>
                         </div>
                     </div>
-                </div>
-            `).join("");
+                </div>`).join("");
+
             contenido.innerHTML = `
                 <button class="boton-texto" onclick="mostrarMusica('${cat}')" style="color: var(--accent); font-size: 14px; margin-bottom: 15px; font-weight: bold; padding: 0;">◀ Volver</button>
                 <h2>${escaparHTML(l.nombre)}</h2>
-                <div class="tarjeta-rutina" style="flex-direction:column; align-items:stretch; gap:10px; margin-bottom:15px; padding:12px;">
-                    <div><label style="margin:0; font-size:12px;">Añadir archivo</label>
-                    <button onclick="añadirAudiosALista('${id}', '${cat}')" class="boton-mini" style="background:#10B981; color:white; width:100%; padding:6px; font-size:13px; margin-top:5px;">+ Subir audio</button></div>
-                    <div><label style="margin:0; font-size:12px;">O pegar enlace (.mp3)</label>
-                    <div style="display:flex; gap:5px; margin-top:5px;"><input type="url" id="urlAudio_${id}" placeholder="https://..." style="flex:1; padding:6px; font-size:13px;"><button onclick="añadirEnlaceAudio('${id}', '${cat}')" class="boton-mini" style="background:#3B82F6; color:white; padding:6px 10px; font-size:13px;">Añadir</button></div></div>
+                
+                <div class="tarjeta-rutina" style="flex-direction:column; align-items:stretch; gap:10px; margin-bottom:15px; padding:15px;">
+                    <div>
+                        <label style="margin:0; font-size:12px; color:var(--text-muted);">Añadir archivo</label>
+                        <button onclick="añadirAudiosALista('${id}', '${cat}')" style="background:#10B981; color:white; width:100%; padding:10px; font-size:13px; margin-top:5px; border-radius:8px; border:none; font-weight:bold; cursor:pointer;">+ Subir audio</button>
+                    </div>
+                    
+                    <div>
+                        <label style="margin:0; font-size:12px; color:var(--text-muted);">O pegar enlace (.mp3)</label>
+                        <div style="display:flex; gap:8px; margin-top:5px; width:100%;">
+                            <!-- Aquí está el arreglo del cuadro de texto -->
+                            <input type="url" id="urlAudio_${id}" placeholder="Pega el enlace aquí..." style="flex:1; min-width:0; padding:10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); outline:none;">
+                            <!-- Aquí está el arreglo del botón Añadir -->
+                            <button onclick="añadirEnlaceAudio('${id}', '${cat}')" style="background:#3B82F6; color:white; padding:0 15px; font-size:13px; border-radius:8px; border:none; flex-shrink:0; font-weight:bold; cursor:pointer; height:auto;">Añadir</button>
+                        </div>
+                    </div>
                 </div>
-                <button onclick="reproducirListaEntera('${id}')" style="background:#3B82F6; color:white; width:100%; padding:8px; font-size:13px; border-radius:8px; margin-bottom:15px;">▶ Reproducir todo</button>
+
+                <button onclick="reproducirListaEntera('${id}')" style="background:#3B82F6; color:white; width:100%; padding:10px; font-size:14px; border-radius:8px; margin-bottom:15px; border:none; font-weight:bold; cursor:pointer;">▶ Reproducir todo</button>
+                
                 <div>${h}</div>
-                <button class="boton-texto texto-rojo" onclick="eliminarListaLocal('${id}', '${cat}')" style="width:100%; margin-top:20px; font-size:13px;">🗑 Eliminar lista entera</button>
-            `;
+                
+                <button class="boton-texto texto-rojo" onclick="eliminarListaLocal('${id}', '${cat}')" style="width:100%; margin-top:20px; font-size:13px;">🗑 Eliminar lista entera</button>`;
         };
     });
 }
+
 function añadirAudiosALista(idL, cat) { const inp = document.createElement("input"); inp.type = "file"; inp.accept = "audio/*"; inp.multiple = true; inp.onchange = () => { const fs = Array.from(inp.files); if (fs.length === 0) return; initAudioDB(() => { const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios"); fs.forEach(f => st.put({ id: "audio_" + Date.now() + "_" + Math.floor(Math.random() * 1000), listaId: idL, nombre: f.name, blob: f })); tx.oncomplete = () => { aviso("✅ Añadidos."); verListaLocal(idL, cat); }; }); }; inp.click(); }
-function añadirEnlaceAudio(idL, cat) {
-    const url = document.getElementById(`urlAudio_${idL}`).value.trim(); 
-    if (!url) return; 
-    const nombre = prompt("Ponle un nombre a este audio:", "Nuevo audio");
-    if (nombre === null) return;
-    const nombreFinal = nombre.trim() || "Audio sin nombre";
-    initAudioDB(() => { 
-        const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios"); 
-        st.put({ id: "audio_" + Date.now(), listaId: idL, nombre: nombreFinal, url: url }); 
-        tx.oncomplete = () => { aviso("✅ Enlace añadido."); verListaLocal(idL, cat); }; 
-    }); 
-}
-function editarNombreAudio(idA, idL, cat) {
-    initAudioDB(() => {
-        const tx = dbAudio.transaction("audios", "readwrite"); const st = tx.objectStore("audios"); const req = st.get(idA);
-        req.onsuccess = () => {
-            const audio = req.result; if (!audio) return;
-            const nuevoNombre = prompt("Nuevo nombre para este audio:", audio.nombre);
-            if (nuevoNombre !== null && nuevoNombre.trim() !== "") { audio.nombre = nuevoNombre.trim(); st.put(audio); tx.oncomplete = () => { aviso("✅ Nombre actualizado."); verListaLocal(idL, cat); }; }
-        };
-    });
-}
+
+function añadirEnlaceAudio(idL, cat) { const url = document.getElementById(`urlAudio_${idL}`).value.trim(); if (!url) return; const nombre = prompt("Ponle un nombre a este audio:", "Nuevo audio"); if (nombre === null) return; const nombreFinal = nombre.trim() || "Audio sin nombre"; initAudioDB(() => { const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios"); st.put({ id: "audio_" + Date.now(), listaId: idL, nombre: nombreFinal, url }); tx.oncomplete = () => { aviso("✅ Enlace añadido."); verListaLocal(idL, cat); }; }); }
+
+function editarNombreAudio(idA, idL, cat) { initAudioDB(() => { const tx = dbAudio.transaction("audios", "readwrite"); const st = tx.objectStore("audios"); const req = st.get(idA); req.onsuccess = () => { const audio = req.result; if (!audio) return; const nuevoNombre = prompt("Nuevo nombre para este audio:", audio.nombre); if (nuevoNombre !== null && nuevoNombre.trim() !== "") { audio.nombre = nuevoNombre.trim(); st.put(audio); tx.oncomplete = () => { aviso("✅ Nombre actualizado."); verListaLocal(idL, cat); }; } }; }); }
+
 function toggleConfirmacionAudio(id) { const div = document.getElementById(`confirm_audio_${id}`); if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none'; }
+
 function eliminarAudioDirecto(idA, idL, cat) { initAudioDB(() => { const tx = dbAudio.transaction("audios", "readwrite"); tx.objectStore("audios").delete(idA); tx.oncomplete = () => { aviso("🗑 Canción eliminada."); verListaLocal(idL, cat); }; }); }
 function reproducirListaEntera(idLista) { initAudioDB(() => { const rq = dbAudio.transaction("audios", "readonly").objectStore("audios").getAll(); rq.onsuccess = () => { playlistActual = rq.result.filter(a => a.listaId === idLista); if (playlistActual.length === 0) { alert("Lista vacía."); return; } indiceCancion = 0; cargarCancionActual(); }; }); }
 function cargarCancionActual() { if (playlistActual.length === 0) return; const a = playlistActual[indiceCancion]; if (a.blob) audioGlobal.src = URL.createObjectURL(a.blob); else if (a.url) audioGlobal.src = a.url; audioGlobal.play(); document.getElementById('player-titulo').innerText = a.nombre; document.getElementById('btn-play-pause').innerText = "⏸"; floatingPlayer.style.display = "flex"; }
@@ -1341,30 +1362,32 @@ function eliminarPodcast(id) { confirmar("¿Eliminar?", () => { podcastsGuardado
 function mostrarVideos() {
     guardarScroll();
     const l = videosGuardados.length === 0 ? `<p style="text-align:center;">No hay vídeos guardados.</p>` : videosGuardados.map(v => `
-        <div class="item-mini">
+        <div class="item-mini" onclick="reproducirVideoEnLista('${v.id}', '${v.url}')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span style="font-size:14px; color:var(--text-main);">🎥 ${escaparHTML(v.nombre)}</span>
+            <button onclick="event.stopPropagation(); toggleConfirmacionVideo('${v.id}')" style="background:transparent; border:none; color:#EF4444; font-size:20px; width:40px; height:40px; padding:0; flex-shrink:0; cursor:pointer;">🗑</button>
+        </div>
+        <div id="confirm_${v.id}" style="display:none; padding:8px; background:var(--bg-main); border-radius:8px; margin-top:5px; margin-bottom:10px; border:1px solid var(--border-color);">
+            <p style="margin:0 0 5px 0; font-size:11px; text-align:center;">¿Eliminar vídeo?</p>
             <div style="display:flex; gap:5px;">
-                <button class="btn-mini-accion" style="color:var(--accent);" onclick="reproducirVideoEnLista('${v.id}', '${v.url}')">▶</button>
-                <button class="btn-mini-accion" style="color:#EF4444;" onclick="toggleConfirmacionVideo('${v.id}')">🗑</button>
+                <button onclick="eliminarVideoDirecto('${v.id}')" style="background:#10B981; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">Sí</button>
+                <button onclick="toggleConfirmacionVideo('${v.id}')" style="background:#EF4444; color:white; flex:1; padding:6px; font-size:12px; border-radius:4px; border:none;">No</button>
             </div>
         </div>
-        <div id="confirm_${v.id}" style="display:none; padding:8px; background:var(--bg-main); border-radius:8px; margin-top:5px; border:1px solid var(--border-color);">
-            <p style="margin:0 0 5px 0; font-size:11px;">¿Eliminar vídeo?</p>
-            <div style="display:flex; gap:5px;">
-                <button onclick="eliminarVideoDirecto('${v.id}')" style="background:#10B981; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">Sí</button>
-                <button onclick="toggleConfirmacionVideo('${v.id}')" style="background:#EF4444; color:white; flex:1; padding:4px; font-size:11px; border-radius:4px;">No</button>
-            </div>
-        </div>
-        <div id="player_${v.id}" style="margin-bottom:10px;"></div>
+        <div id="player_${v.id}" style="margin-bottom:15px;"></div>
     `).join("");
-    
+
     contenido.innerHTML = `
         <h2>Vídeos Guardados</h2>
-        <button onclick="mostrarFormularioVideo()" style="background:#EF4444; width: 70%; margin: 10px auto 15px auto; display: block; padding: 8px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">+ Añadir vídeo</button>
+        <div class="tarjeta-rutina" style="text-align:center; padding:15px 10px; margin-bottom:15px;">
+            <p style="margin:0 0 10px 0; font-size:13px;">Abre la app de YouTube si lo prefieres.</p>
+            <button onclick="abrirEnlace('https://www.youtube.com')" style="background:#EF4444; width: 70%; margin: 0 auto; display: block; padding: 8px 12px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border: none; cursor: pointer;">▶ Abrir YouTube</button>
+        </div>
+        <button onclick="mostrarFormularioVideo()" style="background:#3B82F6; width: 70%; margin: 0 auto 15px auto; display: block; padding: 8px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border: none; cursor:pointer;">+ Añadir vídeo</button>
         ${l}
     `;
     restaurarScroll();
 }
+
 function toggleConfirmacionVideo(id) { const div = document.getElementById(`confirm_${id}`); if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none'; }
 function eliminarVideoDirecto(id) { videosGuardados = videosGuardados.filter(x => x.id !== id); guardarDatos(); mostrarVideos(); aviso("🗑 Vídeo eliminado."); }
 function reproducirVideoEnLista(id, url) { const info = detectarTipoVideo(url); const div = document.getElementById(`player_${id}`); if (!div) return; if (div.innerHTML !== "") { div.innerHTML = ""; return; } if (info.tipo === "youtube") { div.innerHTML = `<iframe width="100%" height="220" src="https://www.youtube.com/embed/${info.id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen frameborder="0" style="border-radius:12px; margin-top:10px;"></iframe>`; } else { div.innerHTML = `<p>Enlace no válido.</p>`; } }
@@ -1377,32 +1400,53 @@ function guardarVideo() { const n = document.getElementById("videoNombre").value
 /* =====================================================
    AJUSTES (CORREGIDO)
 ===================================================== */
-let ajusteAbierto = "";
+let ajustesAbiertos = [];
 
 function mostrarAjustes() {
-    const t = [["claro", "Claro"], ["oscuro", "Oscuro"], ["oled", "Negro"], ["bicolor", "Bicolor"]]; 
+    guardarScroll();
+    const t = [["claro", "Claro"], ["oscuro", "Oscuro"], ["oled", "Negro"], ["bicolor", "Bicolor"]];
     const l = [["pequenia", "Pequeña"], ["mediana", "Normal"], ["grande", "Grande"]];
     const f = [["recto", "Recto"], ["redondeado", "Redondeado"], ["pastilla", "Pastilla"], ["circulo", "Círculo"]];
     const hayMenuPersonal = colorMenuGlobal !== "" || Object.keys(coloresMenu).length > 0;
-    const colorObjetivo = menuSeleccionado === "todos" ? (colorMenuGlobal || colorActual) : colorDeBoton(menuSeleccionado);
+
+    const colorObjetivo = menuSeleccionado === "todos"
+        ? (colorMenuGlobal || colorActual)
+        : (coloresMenu[menuSeleccionado] || colorActual);
+
+    const aj = (k, ti, va, cu) => `<details class="ajuste" ${ajustesAbiertos.includes(k) ? "open" : ""} ontoggle="if(this.open){if(!ajustesAbiertos.includes('${k}')) ajustesAbiertos.push('${k}')}else{ajustesAbiertos=ajustesAbiertos.filter(x=>x!=='${k}')}"><summary>${ti}<small>${va}</small></summary><div style="padding:10px;">${cu}</div></details>`;
     
-    const aj = (k, ti, va, cu) => `<details class="ajuste" ${ajusteAbierto === k ? "open" : ""} ontoggle="if(this.open){ajusteAbierto='${k}'}else if(ajusteAbierto==='${k}'){ajusteAbierto=''}"><summary>${ti}<small>${va}</small></summary><div style="padding:10px;">${cu}</div></details>`;
     const btnO = (v, tx, ac, fn) => `<button onclick="${fn}('${v}')" style="background:${v === ac ? 'var(--accent)' : 'var(--bg-main)'}; color:${v === ac ? 'white' : 'var(--text-main)'}; border:1px solid var(--border-color); padding:12px; border-radius:var(--radio); width:100%; margin-top:10px; text-align:left;">${tx}</button>`;
-    const htmlPaleta = (actual, funcion) => `<div class="grupo-colores" style="display:flex; flex-wrap:wrap; gap:10px;">${paletaColores.map(c => `<button class="muestra-color ${actual === c[0] ? 'activo' : ''}" style="background:${c[0]};" onclick="${funcion}('${c[0]}')"></button>`).join("")}</div><label>Otro color</label><input type="color" value="${actual || '#FF6B6B'}" onchange="${funcion}(this.value)">`;
-    const chipsMenu = [["todos", "Todos"]].concat(botonesMenu).map(b => `<button class="chip chip-medida ${b[0] === menuSeleccionado ? "activo" : ""}" onclick="elegirBotonMenu('${b[0]}')">${b[1]}</button>`).join("");
+
+    const htmlPaleta = (actual, funcion) => `<div class="grupo-colores">${paletaColores.map(c => `<button class="muestra-color ${actual && actual.toLowerCase() === c[0].toLowerCase() ? 'activo' : ''}" style="background:${c[0]};" onclick="${funcion}('${c[0]}')"></button>`).join("")}</div><label>Otro color</label><input type="color" value="${actual || '#FF6B6B'}" onchange="${funcion}(this.value)">`;
+
+    const chipsMenu = [["todos", "Todos"]].concat(botonesMenu).map(b => {
+        const activo = b[0] === menuSeleccionado;
+        return `<button style="background:${activo ? 'var(--accent)' : 'var(--bg-main)'}; color:${activo ? 'white' : 'var(--text-main)'}; border:1px solid var(--border-color); padding:10px 4px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; text-align:center;" onclick="elegirBotonMenu('${b[0]}')">${b[1]}</button>`;
+    }).join("");
+
+    const botonSel = botonesMenu.find(b => b[0] === menuSeleccionado);
+    const textoCambiando = menuSeleccionado === "todos" ? "todos los botones" : (botonSel ? botonSel[1] : "botón seleccionado");
+
+    const extraBicolor = temaActual === "bicolor" ? `
+        <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border-color);">
+            <label style="font-weight:bold; color:var(--text-main); font-size:14px; margin-bottom:5px; display:block;">Color de Fondo (Bicolor)</label>
+            ${htmlPaleta(localStorage.getItem("colorBicolorFondo") || "#1E293B", "cambiarColorBicolorFondo")}
+            
+            <label style="font-weight:bold; color:var(--text-main); font-size:14px; margin-top:15px; margin-bottom:5px; display:block;">Color de Acento (Bicolor)</label>
+            ${htmlPaleta(localStorage.getItem("colorBicolorAcento") || "#3B82F6", "cambiarColorBicolorAcento")}
+        </div>` : "";
 
     contenido.innerHTML = `<h2>Ajustes y personalización</h2>
-        ${aj("tema", "Tema visual", temaActual, t.map(x => btnO(x[0], x[1], temaActual, "cambiarTemaApp")).join(""))}
+        ${aj("tema", "Tema visual", temaActual, t.map(x => btnO(x[0], x[1], temaActual, "cambiarTemaApp")).join("") + extraBicolor)}
         ${aj("letra", "Tamaño de letra", letraActual, l.map(x => btnO(x[0], x[1], letraActual, "cambiarTamanioLetra")).join(""))}
         ${aj("forma", "Forma de los botones", formaBotones, f.map(x => btnO(x[0], x[1], formaBotones, "cambiarFormaBotones")).join(""))}
         ${aj("opacidad", "Opacidad del color", Math.round(opacidadColor * 100) + "%", `<p style="margin-bottom:10px;">Ajusta la transparencia de los colores.</p><input type="range" min="10" max="100" value="${opacidadColor * 100}" oninput="cambiarOpacidad(this.value)" style="width:100%; accent-color: var(--accent);">`)}
         ${aj("color", "Color de diseño", "Elegido", htmlPaleta(colorActual, "cambiarColorPrincipal"))}
-        ${aj("menu", "Color de botones", hayMenuPersonal ? "Personalizado" : "Como el diseño", `<p>Elige qué botón quieres cambiar, o «Todos».</p><div class="selector-chips">${chipsMenu}</div><p class="texto-ultima">Cambiando: <strong>${menuSeleccionado === "todos" ? "todos" : botonesMenu.find(b => b[0] === menuSeleccionado)[1]}</strong></p>${htmlPaleta(colorObjetivo, "cambiarColorBoton")}<button onclick="restaurarColoresMenu()" style="width:100%; margin-top:12px; background:#3B82F6;">Usar color del diseño en todos</button>`)}
-        
-        ${aj("version", "Actualizaciones", "v12", `<button onclick="buscarActualizaciones()" style="width:100%;background:#10B981;">🔄 Buscar actualizaciones</button>`)}
-        
-        ${aj("copia", "Copia de seguridad", "", `<p style="margin-bottom:10px;">Guarda tus datos.</p><button onclick="exportarDatos()" style="width:100%;">📥 Descargar copia</button><button onclick="importarDatos()" style="width:100%;margin-top:10px;">📤 Importar copia</button>`)}
-    `;
+        ${aj("menu", "Color de botones", hayMenuPersonal ? "Personalizado" : "Como el diseño", `<p>Elige qué botón quieres cambiar, o «Todos».</p><div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(85px, 1fr)); gap:6px; margin-bottom:15px;">${chipsMenu}</div><p class="texto-ultima">Cambiando: <strong>${textoCambiando}</strong></p>${htmlPaleta(colorObjetivo, "cambiarColorBoton")}<button onclick="restaurarColoresMenu()" style="width:100%; margin-top:12px; background:#3B82F6;">Usar color del diseño en todos</button>`)}
+        ${aj("version", "Actualizaciones", "v15", `<button onclick="buscarActualizaciones()" style="width:100%;background:#10B981;">🔄 Buscar actualizaciones</button>`)}
+        ${aj("copia", "Copia de seguridad", "", `<p style="margin-bottom:10px;">Guarda tus datos.</p><button onclick="exportarDatos()" style="width:100%;">📥 Descargar copia</button><button onclick="importarDatos()" style="width:100%;margin-top:10px;">📤 Importar copia</button>`)}`;
+    
+    restaurarScroll();
 }
 
 // Función para saber qué versión está activa ahora mismo
@@ -1430,43 +1474,6 @@ async function buscarActualizaciones() {
     aviso("Buscando actualizaciones...");
     
     try {
-        // 1. Obtenemos la versión actual instalada en el móvil
-        let versionActual = "Desconocida";
-        if ('caches' in window) {
-            const claves = await caches.keys();
-            const cacheEntrenamiento = claves.find(k => k.startsWith('entrenamiento-'));
-            if (cacheEntrenamiento) versionActual = cacheEntrenamiento.replace('entrenamiento-', '');
-        }
-
-        // 2. Descargamos el sw.js nuevo de GitHub para ver qué versión hay
-        const r = await fetch("sw.js?ts=" + Date.now(), { cache: "no-store" });
-        const texto = await r.text();
-        // Busca el texto entre comillas en CACHE_NAME = 'entrenamiento-vXX'
-        const match = texto.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
-        
-        if (!match) { aviso("No se pudo leer la versión nueva."); return; }
-        
-        let versionNueva = match[1].replace('entrenamiento-', '');
-
-        // 3. Comparamos
-        if (versionNueva !== versionActual) {
-            confirmar(`Hay una versión nueva (${versionNueva}) lista.\nTú tienes la (${versionActual}).\n\n¿Quieres instalarla y reiniciar la app?`, () => {
-                actualizarApp();
-            });
-        } else {
-            aviso(`✅ Ya tienes la última versión instalada (${versionActual}).`);
-        }
-    } catch (e) {
-        aviso("Error al comprobar actualizaciones. Revisa tu conexión.");
-    }
-}
-
-async function buscarActualizaciones() {
-    if (!navigator.onLine) { aviso("Sin conexión a internet."); return; }
-    aviso("Buscando actualizaciones...");
-    
-    try {
-        // 1. Obtenemos la versión actual instalada mirando la caché
         let versionActual = "Desconocida";
         if ('caches' in window) {
             const claves = await caches.keys();
@@ -1474,7 +1481,6 @@ async function buscarActualizaciones() {
             if (cache) versionActual = cache.replace('entrenamiento-', '');
         }
 
-        // 2. Descargamos el sw.js nuevo para ver la versión de GitHub
         const r = await fetch("sw.js?ts=" + Date.now(), { cache: "no-store" });
         const texto = await r.text();
         const match = texto.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
@@ -1482,7 +1488,6 @@ async function buscarActualizaciones() {
         if (!match) { aviso("No se pudo leer la versión nueva."); return; }
         let versionNueva = match[1].replace('entrenamiento-', '');
 
-        // 3. Comparamos y avisamos
         if (versionNueva !== versionActual) {
             confirmar(`Hay una versión nueva (${versionNueva}).\nTú tienes la (${versionActual}).\n\n¿Quieres actualizar y reiniciar?`, () => {
                 actualizarApp();
@@ -1498,32 +1503,53 @@ async function buscarActualizaciones() {
 async function actualizarApp() {
     aviso("Instalando...");
     try {
-        // 1. Desregistramos el Service Worker actual
         if ("serviceWorker" in navigator) {
             const registros = await navigator.serviceWorker.getRegistrations();
             for (let r of registros) { await r.unregister(); }
         }
-        // 2. Borramos toda la caché
         if (window.caches) {
             const claves = await caches.keys();
             await Promise.all(claves.map(k => caches.delete(k)));
         }
     } catch (e) {}
     
-    // 3. Recargamos forzando que se baje todo de internet
-    setTimeout(() => {
-        window.location.reload(true);
-    }, 800);
+    setTimeout(() => { window.location.reload(true); }, 800);
 }
 
-function cambiarTemaApp(t) { temaActual = t; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
-function cambiarTamanioLetra(t) { letraActual = t; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
-function cambiarFormaBotones(f) { formaBotones = f; aplicarPreferencias(); guardarDatos(); ajusteAbierto = "forma"; mostrarAjustes(); }
+function cambiarTemaApp(t) { guardarScroll(); temaActual = t; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
+function cambiarTamanioLetra(t) { guardarScroll(); letraActual = t; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
+function cambiarFormaBotones(f) { guardarScroll(); formaBotones = f; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
 function cambiarOpacidad(valor) { opacidadColor = valor / 100; aplicarPreferencias(); guardarDatos(); const summary = document.querySelector(`details.ajuste[open] summary small`); if (summary) summary.innerText = valor + "%"; }
-function cambiarColorPrincipal(c) { if (!/^#[0-9a-f]{6}$/i.test(c)) return; colorActual = c; aplicarPreferencias(); guardarDatos(); ajusteAbierto = "color"; mostrarAjustes(); }
-function elegirBotonMenu(c) { menuSeleccionado = c; ajusteAbierto = "menu"; mostrarAjustes(); }
-function cambiarColorBoton(c) { if (!/^#[0-9a-f]{6}$/i.test(c)) return; if (menuSeleccionado === "todos") { colorMenuGlobal = c; coloresMenu = {}; } else coloresMenu[menuSeleccionado] = c; aplicarPreferencias(); guardarDatos(); ajusteAbierto = "menu"; mostrarAjustes(); }
-function restaurarColoresMenu() { colorMenuGlobal = ""; coloresMenu = {}; menuSeleccionado = "todos"; aplicarPreferencias(); guardarDatos(); ajusteAbierto = "menu"; mostrarAjustes(); aviso("Botones con color del diseño."); }
+function cambiarColorBicolorFondo(c) { 
+    guardarScroll(); 
+    if (!/^#[0-9a-f]{6}$/i.test(c)) return; 
+    localStorage.setItem("colorBicolorFondo", c.toLowerCase()); 
+    aplicarPreferencias(); 
+    mostrarAjustes(); 
+}
+
+function cambiarColorBicolorAcento(c) { 
+    guardarScroll(); 
+    if (!/^#[0-9a-f]{6}$/i.test(c)) return; 
+    localStorage.setItem("colorBicolorAcento", c.toLowerCase()); 
+    aplicarPreferencias(); 
+    mostrarAjustes(); 
+}
+function cambiarColorPrincipal(c) { guardarScroll(); if (!/^#[0-9a-f]{6}$/i.test(c)) return; colorActual = c.toLowerCase(); aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
+function elegirBotonMenu(c) { guardarScroll(); menuSeleccionado = c; mostrarAjustes(); }
+
+function cambiarColorBoton(c) {
+    guardarScroll();
+    if (!/^#[0-9a-f]{6}$/i.test(c)) return;
+    let colorSeguro = c.toLowerCase();
+    if (menuSeleccionado === "todos") { colorMenuGlobal = colorSeguro; coloresMenu = {}; }
+    else { coloresMenu[menuSeleccionado] = colorSeguro; }
+    aplicarPreferencias();
+    guardarDatos();
+    mostrarAjustes();
+}
+
+function restaurarColoresMenu() { guardarScroll(); colorMenuGlobal = ""; coloresMenu = {}; menuSeleccionado = "todos"; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); aviso("Botones con color del diseño."); }
 function restaurarEjerciciosBase() { if (ejerciciosOcultos.length === 0) { aviso("No hay ejercicios eliminados."); return; } confirmar(`Se recuperarán ${ejerciciosOcultos.length} ejercicio(s). ¿Continuar?`, function() { ejerciciosOcultos = []; guardarDatos(); mostrarAjustes(); aviso("Recuperados."); }); }
 
 
