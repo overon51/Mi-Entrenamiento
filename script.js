@@ -1,4 +1,4 @@
-const APP_VERSION = "9.5";
+
 const paletaColores = [["#FF6B6B","Coral"], ["#2196F3","Azul"], ["#10B981","Verde"], ["#F59E0B","Amarillo"], ["#8B5CF6","Morado"], ["#EF4444","Rojo"], ["#EC4899","Rosa"], ["#14B8A6","Turquesa"], ["#F97316","Naranja"], ["#0F172A","Oscuro"], ["#FFFFFF","Blanco"]];
 const botonesMenu = [["ejercicios", "Ejercicios"], ["rutinas", "Rutinas"], ["progreso", "Progreso"], ["cronometro", "Cronómetro"], ["correr", "Cardio"], ["calendario", "Calendario"], ["tiempo", "Tiempo"], ["musica", "Música"], ["video", "Vídeos"]];
 let contenido = null;
@@ -1000,8 +1000,12 @@ function mostrarCorrer() {
         </div>
     `}).join("");
 
+    // NUEVO: Contenedor del mapa en vivo
+    const mapaVivoDiv = `<div id="liveMap" style="height: 220px; width: 100%; border-radius: 12px; margin-bottom: 15px; display: none; z-index: 1;"></div>`;
+
     contenido.innerHTML = `
         <h2>Cardio 🏃</h2>
+        ${mapaVivoDiv}
         <div class="panel-correr" style="padding:15px;">
             ${sel}<p id="correrGps" style="font-size:12px; color:var(--text-muted); text-align:center;"></p>
             <div style="font-size:52px; font-weight:800; text-align:center; font-family:monospace;" id="correrTiempo">00:00</div>
@@ -1012,6 +1016,13 @@ function mostrarCorrer() {
         <h3 style="margin-top:20px;">Historial</h3>
         ${historialHTML}
     `;
+
+    // Si estamos corriendo, inicializamos el mapa en vivo
+    if (correr.estado === "corriendo" && t.gps) {
+        document.getElementById("liveMap").style.display = "block";
+        initLiveMap();
+    }
+
     actualizarVistaCorrer();
     restaurarScroll();
 }
@@ -1347,6 +1358,16 @@ function mostrarAjustes() {
     const htmlPaleta = (actual, funcion) => `<div class="grupo-colores" style="display:flex; flex-wrap:wrap; gap:10px;">${paletaColores.map(c => `<button class="muestra-color ${actual === c[0] ? 'activo' : ''}" style="background:${c[0]};" onclick="${funcion}('${c[0]}')"></button>`).join("")}</div><label>Otro color</label><input type="color" value="${actual || '#FF6B6B'}" onchange="${funcion}(this.value)">`;
     const chipsMenu = [["todos", "Todos"]].concat(botonesMenu).map(b => `<button class="chip chip-medida ${b[0] === menuSeleccionado ? "activo" : ""}" onclick="elegirBotonMenu('${b[0]}')">${b[1]}</button>`).join("");
 
+    // Contenido del desplegable de Información
+    const infoHTML = `
+        <p style="text-align:center; margin-bottom:15px;">Versión instalada: <strong id="versionInstaladaTexto" style="color:var(--accent);">Cargando...</strong></p>
+        <button onclick="buscarActualizaciones()" style="width:100%; background:#10B981; color:white; margin-bottom:15px;">🔄 Buscar actualizaciones</button>
+        <hr style="border-color:var(--border-color); margin:15px 0;">
+        <p style="font-size:12px; text-align:center; margin-bottom:10px;">Copia de seguridad de tus datos:</p>
+        <button onclick="exportarDatos()" style="width:100%; margin-bottom:10px;">📥 Descargar copia</button>
+        <button onclick="importarDatos()" style="width:100%;">📤 Importar copia (pegar)</button>
+    `;
+
     contenido.innerHTML = `<h2>Ajustes y personalización</h2>
         ${aj("tema", "Tema visual", temaActual, t.map(x => btnO(x[0], x[1], temaActual, "cambiarTemaApp")).join(""))}
         ${aj("letra", "Tamaño de letra", letraActual, l.map(x => btnO(x[0], x[1], letraActual, "cambiarTamanioLetra")).join(""))}
@@ -1354,9 +1375,90 @@ function mostrarAjustes() {
         ${aj("opacidad", "Opacidad del color", Math.round(opacidadColor * 100) + "%", `<p style="margin-bottom:10px;">Ajusta la transparencia de los colores.</p><input type="range" min="10" max="100" value="${opacidadColor * 100}" oninput="cambiarOpacidad(this.value)" style="width:100%; accent-color: var(--accent);">`)}
         ${aj("color", "Color de diseño", "Elegido", htmlPaleta(colorActual, "cambiarColorPrincipal"))}
         ${aj("menu", "Color de botones", hayMenuPersonal ? "Personalizado" : "Como el diseño", `<p>Elige qué botón quieres cambiar, o «Todos».</p><div class="selector-chips">${chipsMenu}</div><p class="texto-ultima">Cambiando: <strong>${menuSeleccionado === "todos" ? "todos" : botonesMenu.find(b => b[0] === menuSeleccionado)[1]}</strong></p>${htmlPaleta(colorObjetivo, "cambiarColorBoton")}<button onclick="restaurarColoresMenu()" style="width:100%; margin-top:12px; background:#3B82F6;">Usar color del diseño en todos</button>`)}
-        ${aj("version", "Actualizaciones", "v" + APP_VERSION, `<button onclick="buscarActualizaciones()" style="width:100%;background:#10B981;">🔄 Buscar actualizaciones</button>`)}
-        ${aj("copia", "Copia de seguridad", "", `<button onclick="exportarDatos()" style="width:100%;">Descargar copia</button><button onclick="importarDatos()" style="width:100%;margin-top:10px;">Importar copia (pegar)</button>`)}
+        
+        <!-- EL NUEVO BLOQUE DE INFORMACIÓN Y COPIA -->
+        ${aj("info", "Información y copia de seguridad", "", infoHTML)}
     `;
+
+    // Al abrir, buscamos qué versión está instalada
+    obtenerVersionInstalada();
+}
+
+// Función para saber qué versión está activa ahora mismo
+async function obtenerVersionInstalada() {
+    const el = document.getElementById("versionInstaladaTexto");
+    if (!el) return;
+    
+    try {
+        if ('caches' in window) {
+            const claves = await caches.keys();
+            const cacheEntrenamiento = claves.find(k => k.startsWith('entrenamiento-'));
+            if (cacheEntrenamiento) {
+                el.innerText = cacheEntrenamiento.replace('entrenamiento-', ''); // Muestra "v11"
+                return;
+            }
+        }
+        el.innerText = "Desconocida";
+    } catch (e) {
+        el.innerText = "Error";
+    }
+}
+
+async function buscarActualizaciones() {
+    if (!navigator.onLine) { aviso("Sin conexión a internet."); return; }
+    aviso("Buscando actualizaciones...");
+    
+    try {
+        // 1. Obtenemos la versión actual instalada en el móvil
+        let versionActual = "Desconocida";
+        if ('caches' in window) {
+            const claves = await caches.keys();
+            const cacheEntrenamiento = claves.find(k => k.startsWith('entrenamiento-'));
+            if (cacheEntrenamiento) versionActual = cacheEntrenamiento.replace('entrenamiento-', '');
+        }
+
+        // 2. Descargamos el sw.js nuevo de GitHub para ver qué versión hay
+        const r = await fetch("sw.js?ts=" + Date.now(), { cache: "no-store" });
+        const texto = await r.text();
+        // Busca el texto entre comillas en CACHE_NAME = 'entrenamiento-vXX'
+        const match = texto.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+        
+        if (!match) { aviso("No se pudo leer la versión nueva."); return; }
+        
+        let versionNueva = match[1].replace('entrenamiento-', '');
+
+        // 3. Comparamos
+        if (versionNueva !== versionActual) {
+            confirmar(`Hay una versión nueva (${versionNueva}) lista.\nTú tienes la (${versionActual}).\n\n¿Quieres instalarla y reiniciar la app?`, () => {
+                actualizarApp();
+            });
+        } else {
+            aviso(`✅ Ya tienes la última versión instalada (${versionActual}).`);
+        }
+    } catch (e) {
+        aviso("Error al comprobar actualizaciones. Revisa tu conexión.");
+    }
+}
+
+async function actualizarApp() {
+    try {
+        if ("serviceWorker" in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+                // Si hay un SW esperando, le decimos que se active
+                if (reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
+                await reg.update();
+            }
+        }
+        if (window.caches) {
+            const claves = await caches.keys();
+            await Promise.all(claves.map(k => caches.delete(k)));
+        }
+    } catch (e) {}
+    
+    setTimeout(() => {
+        window.location.reload(true);
+    }, 500);
 }
 
 function cambiarTemaApp(t) { temaActual = t; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
@@ -1397,3 +1499,102 @@ function procesarEnlaceCompartido() {
     }
 }
 
+let liveMap = null;
+let livePolyline = null;
+let liveMarker = null;
+
+function initLiveMap() {
+    if (liveMap) { liveMap.remove(); } 
+    
+    liveMap = L.map('liveMap').setView([40.4168, -3.7038], 15);
+    
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(liveMap);
+
+    livePolyline = L.polyline([], { color: '#3B82F6', weight: 5, opacity: 0.8 }).addTo(liveMap);
+    liveMarker = L.circleMarker([40.4168, -3.7038], { radius: 7, fillColor: '#3B82F6', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(liveMap);
+}
+
+function actualizarMapaEnVivo(lat, lon) {
+    if (!liveMap || !livePolyline || !liveMarker) return;
+    liveMarker.setLatLng([lat, lon]);
+    livePolyline.addLatLng([lat, lon]);
+    liveMap.setView([lat, lon]);
+}
+
+function posicionCorrer(p) { 
+    if (correr.estado !== "corriendo") return; 
+    correr.precision = p.coords.accuracy; 
+    if (p.coords.accuracy > 35) return; 
+    correr.gps = "ok"; 
+    const act = [p.coords.latitude, p.coords.longitude]; 
+    
+    actualizarMapaEnVivo(act[0], act[1]);
+
+    if (!correr.ultimaPos) { correr.ultimaPos = { p: act, t: p.timestamp }; correr.puntos.push(act); actualizarVistaCorrer(); return; } 
+    const d = haversine(correr.ultimaPos.p, act); 
+    const dt = (p.timestamp - correr.ultimaPos.t) / 1000; 
+    if (d < 4 || (dt > 0 && d / dt > 25)) return; 
+    correr.distM += d; 
+    correr.puntos.push(act); 
+    correr.ultimaPos = { p: act, t: p.timestamp }; 
+    actualizarVistaCorrer(); 
+}
+
+function verCarrera(id, origen) { 
+    guardarScroll();
+    origenCarrera = origen || "correr";
+    const c = carreras.find(x => x.id === id); if (!c) return; 
+    const t = tiposCardio[tipoDe(c)];
+    const km = (c.distancia || 0) / 1000;
+    
+    contenido.innerHTML = `
+        <button class="boton-texto" onclick="mostrarCorrer()" style="color:var(--accent); font-size:16px; margin-bottom:15px; font-weight:bold; padding:0;">◀ Volver</button>
+        <div style="text-align:center; margin-bottom:20px;">
+            <h2 style="margin:0;">${t.icono} ${t.nombre}</h2>
+            <p style="margin:5px 0 0 0;">${formatearFecha(c.fecha)}</p>
+        </div>
+        
+        <div class="tarjeta-rutina" style="text-align:center; padding:20px;">
+            <div style="display:flex; justify-content:space-around; margin-bottom:20px;">
+                <div><h3 style="font-size:28px; margin:0;">${formatoKm(km)}</h3><span style="font-size:12px; color:var(--text-muted);">Distancia (km)</span></div>
+                <div><h3 style="font-size:28px; margin:0;">${formatoTiempo(c.duracion)}</h3><span style="font-size:12px; color:var(--text-muted);">Tiempo</span></div>
+                <div><h3 style="font-size:28px; margin:0;">${caloriasDe(c)}</h3><span style="font-size:12px; color:var(--text-muted);">Kcal</span></div>
+            </div>
+            
+            ${km > 0 ? `<div style="display:flex; justify-content:space-around; border-top:1px solid var(--border-color); padding-top:15px;">
+                <div><h4 style="margin:0;">${t.ritmo ? formatoRitmo(c.duracion / km) : formatoNum(velocidadKmh(c.duracion, c.distancia))}</h4><span style="font-size:12px; color:var(--text-muted);">${t.ritmo ? 'Ritmo Medio' : 'Vel. Media'}</span></div>
+            </div>` : ""}
+        </div>
+        
+        ${t.gps && c.ruta && c.ruta.length > 1 ? `<div id="summaryMap" style="height: 300px; width: 100%; border-radius: 12px; margin-top: 20px; z-index: 1;"></div>` : ""}
+        
+        <button onclick="eliminarCarrera('${c.id}', event)" style="width:100%; margin-top:30px; background:#EF4444; color:white; border:none; border-radius:var(--radio); padding:12px; font-weight:bold; cursor:pointer;">🗑 Eliminar actividad</button>
+    `;
+
+    if (t.gps && c.ruta && c.ruta.length > 1) {
+        setTimeout(() => { initSummaryMap(c.ruta); }, 100); 
+    }
+    restaurarScroll();
+}
+
+function initSummaryMap(ruta) {
+    const map = L.map('summaryMap');
+    
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(map);
+
+    const latlngs = ruta.map(p => [p[0], p[1]]);
+    const polyline = L.polyline(latlngs, { color: '#3B82F6', weight: 5 }).addTo(map);
+
+    L.circleMarker(latlngs[0], { radius: 8, fillColor: '#10B981', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(map).bindPopup("Inicio");
+    L.circleMarker(latlngs[latlngs.length - 1], { radius: 8, fillColor: '#EF4444', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(map).bindPopup("Fin");
+
+    map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+}
