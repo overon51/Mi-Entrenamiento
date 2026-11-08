@@ -1391,16 +1391,6 @@ function mostrarAjustes() {
     const htmlPaleta = (actual, funcion) => `<div class="grupo-colores" style="display:flex; flex-wrap:wrap; gap:10px;">${paletaColores.map(c => `<button class="muestra-color ${actual === c[0] ? 'activo' : ''}" style="background:${c[0]};" onclick="${funcion}('${c[0]}')"></button>`).join("")}</div><label>Otro color</label><input type="color" value="${actual || '#FF6B6B'}" onchange="${funcion}(this.value)">`;
     const chipsMenu = [["todos", "Todos"]].concat(botonesMenu).map(b => `<button class="chip chip-medida ${b[0] === menuSeleccionado ? "activo" : ""}" onclick="elegirBotonMenu('${b[0]}')">${b[1]}</button>`).join("");
 
-    // Contenido del desplegable de Información
-    const infoHTML = `
-        <p style="text-align:center; margin-bottom:15px;">Versión instalada: <strong id="versionInstaladaTexto" style="color:var(--accent);">Cargando...</strong></p>
-        <button onclick="buscarActualizaciones()" style="width:100%; background:#10B981; color:white; margin-bottom:15px;">🔄 Buscar actualizaciones</button>
-        <hr style="border-color:var(--border-color); margin:15px 0;">
-        <p style="font-size:12px; text-align:center; margin-bottom:10px;">Copia de seguridad de tus datos:</p>
-        <button onclick="exportarDatos()" style="width:100%; margin-bottom:10px;">📥 Descargar copia</button>
-        <button onclick="importarDatos()" style="width:100%;">📤 Importar copia (pegar)</button>
-    `;
-
     contenido.innerHTML = `<h2>Ajustes y personalización</h2>
         ${aj("tema", "Tema visual", temaActual, t.map(x => btnO(x[0], x[1], temaActual, "cambiarTemaApp")).join(""))}
         ${aj("letra", "Tamaño de letra", letraActual, l.map(x => btnO(x[0], x[1], letraActual, "cambiarTamanioLetra")).join(""))}
@@ -1409,12 +1399,10 @@ function mostrarAjustes() {
         ${aj("color", "Color de diseño", "Elegido", htmlPaleta(colorActual, "cambiarColorPrincipal"))}
         ${aj("menu", "Color de botones", hayMenuPersonal ? "Personalizado" : "Como el diseño", `<p>Elige qué botón quieres cambiar, o «Todos».</p><div class="selector-chips">${chipsMenu}</div><p class="texto-ultima">Cambiando: <strong>${menuSeleccionado === "todos" ? "todos" : botonesMenu.find(b => b[0] === menuSeleccionado)[1]}</strong></p>${htmlPaleta(colorObjetivo, "cambiarColorBoton")}<button onclick="restaurarColoresMenu()" style="width:100%; margin-top:12px; background:#3B82F6;">Usar color del diseño en todos</button>`)}
         
-        <!-- EL NUEVO BLOQUE DE INFORMACIÓN Y COPIA -->
-        ${aj("info", "Información y copia de seguridad", "", infoHTML)}
+        ${aj("version", "Actualizaciones", "v12", `<button onclick="buscarActualizaciones()" style="width:100%;background:#10B981;">🔄 Buscar actualizaciones</button>`)}
+        
+        ${aj("copia", "Copia de seguridad", "", `<p style="margin-bottom:10px;">Guarda tus datos.</p><button onclick="exportarDatos()" style="width:100%;">📥 Descargar copia</button><button onclick="importarDatos()" style="width:100%;margin-top:10px;">📤 Importar copia</button>`)}
     `;
-
-    // Al abrir, buscamos qué versión está instalada
-    obtenerVersionInstalada();
 }
 
 // Función para saber qué versión está activa ahora mismo
@@ -1473,25 +1461,59 @@ async function buscarActualizaciones() {
     }
 }
 
-async function actualizarApp() {
+async function buscarActualizaciones() {
+    if (!navigator.onLine) { aviso("Sin conexión a internet."); return; }
+    aviso("Buscando actualizaciones...");
+    
     try {
-        if ("serviceWorker" in navigator) {
-            const reg = await navigator.serviceWorker.getRegistration();
-            if (reg) {
-                // Si hay un SW esperando, le decimos que se active
-                if (reg.waiting) reg.waiting.postMessage("SKIP_WAITING");
-                await reg.update();
-            }
+        // 1. Obtenemos la versión actual instalada mirando la caché
+        let versionActual = "Desconocida";
+        if ('caches' in window) {
+            const claves = await caches.keys();
+            const cache = claves.find(k => k.startsWith('entrenamiento-'));
+            if (cache) versionActual = cache.replace('entrenamiento-', '');
         }
+
+        // 2. Descargamos el sw.js nuevo para ver la versión de GitHub
+        const r = await fetch("sw.js?ts=" + Date.now(), { cache: "no-store" });
+        const texto = await r.text();
+        const match = texto.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+        
+        if (!match) { aviso("No se pudo leer la versión nueva."); return; }
+        let versionNueva = match[1].replace('entrenamiento-', '');
+
+        // 3. Comparamos y avisamos
+        if (versionNueva !== versionActual) {
+            confirmar(`Hay una versión nueva (${versionNueva}).\nTú tienes la (${versionActual}).\n\n¿Quieres actualizar y reiniciar?`, () => {
+                actualizarApp();
+            });
+        } else {
+            aviso(`✅ Ya tienes la última versión (${versionActual}).`);
+        }
+    } catch (e) {
+        aviso("Error al comprobar. Revisa tu conexión.");
+    }
+}
+
+async function actualizarApp() {
+    aviso("Instalando...");
+    try {
+        // 1. Desregistramos el Service Worker actual
+        if ("serviceWorker" in navigator) {
+            const registros = await navigator.serviceWorker.getRegistrations();
+            for (let r of registros) { await r.unregister(); }
+        }
+        // 2. Borramos toda la caché
         if (window.caches) {
             const claves = await caches.keys();
             await Promise.all(claves.map(k => caches.delete(k)));
         }
     } catch (e) {}
     
+    // 3. Recargamos forzando que se baje todo de internet
     setTimeout(() => {
         window.location.reload(true);
-    }, 500);
+    }, 800);
 }
 
 function cambiarTemaApp(t) { temaActual = t; aplicarPreferencias(); guardarDatos(); mostrarAjustes(); }
@@ -1504,10 +1526,7 @@ function cambiarColorBoton(c) { if (!/^#[0-9a-f]{6}$/i.test(c)) return; if (menu
 function restaurarColoresMenu() { colorMenuGlobal = ""; coloresMenu = {}; menuSeleccionado = "todos"; aplicarPreferencias(); guardarDatos(); ajusteAbierto = "menu"; mostrarAjustes(); aviso("Botones con color del diseño."); }
 function restaurarEjerciciosBase() { if (ejerciciosOcultos.length === 0) { aviso("No hay ejercicios eliminados."); return; } confirmar(`Se recuperarán ${ejerciciosOcultos.length} ejercicio(s). ¿Continuar?`, function() { ejerciciosOcultos = []; guardarDatos(); mostrarAjustes(); aviso("Recuperados."); }); }
 
-async function buscarActualizaciones() {
-    if (!navigator.onLine) { aviso("Sin conexión."); return; } aviso("Buscando...");
-    try { const r = await fetch("script.js?ts=" + Date.now(), { cache: "no-store" }); const t = await r.text(); const m = t.match(/const APP_VERSION = "([^"]+)"/); if (!m) return; if (m[1] !== APP_VERSION) confirmar(`Hay versión nueva (${m[1]}). ¿Actualizar?`, () => { if (window.caches) { caches.keys().then(k => Promise.all(k.map(x => caches.delete(x)))); } setTimeout(() => location.reload(), 1000); }); else aviso("✅ Ya tienes la última."); } catch (e) { aviso("Error."); }
-}
+
 function exportarDatos() { try { const b = new Blob([JSON.stringify({ misEjercicios, rutinas, historial, medidasCuerpo, notasDias, carreras, listasMusica, videosGuardados, podcastsGuardados, coloresMenu, colorMenuGlobal }, null, 2)], { type: "application/json" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `copia.json`; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); } catch (e) { aviso("Error"); } }
 function importarDatos() { const t = prompt("Pega el texto de la copia:"); if (!t) return; try { const d = JSON.parse(t); if (d.misEjercicios) misEjercicios = d.misEjercicios; if (d.rutinas) rutinas = d.rutinas; if (d.historial) historial = d.historial; if (d.carreras) carreras = d.carreras; guardarDatos(); aviso("Importado."); mostrarAjustes(); } catch (e) { aviso("Copia no válida."); } }
 
