@@ -1,11 +1,5 @@
-const CACHE_NAME = 'entrenamiento-v10';
-const ARCHIVOS = [
-    './',
-    './index.html',
-    './style.css',
-    './script.js',
-    './manifest.json'
-];
+const CACHE_NAME = 'entrenamiento-v11';
+const ARCHIVOS = ['./', './index.html', './style.css', './script.js', './manifest.json'];
 
 self.addEventListener('install', function(e) {
     self.skipWaiting();
@@ -35,7 +29,5 @@ self.addEventListener('fetch', function(e) {
     }
 });
 
-self.addEventListener('message', function(e) {
-    if (e.data === 'SKIP_WAITING') self.skipWaiting();
-});
+self.addEventListener('message', function(e) { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });
 
