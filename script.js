@@ -948,7 +948,7 @@ function actualizarTiempoSilencioso() {
 }
 
 /* =====================================================
-   CARDIO (CON MAPA RUNKEEPER)
+   CARDIO (CON MAPA)
 ===================================================== */
 const tiposCardio = { 
     correr: { nombre: "Correr", icono: "🏃", gps: true, ritmo: true, met: 9.8 }, 
@@ -1153,6 +1153,39 @@ function htmlRuta(ruta) {
             <div style="padding:10px; text-align:center; font-size:12px; color:var(--text-muted);">🟢 Inicio · 🔴 Fin</div>
         </div>
     `;
+}
+
+function initLiveMap() {
+    if (liveMap) { liveMap.remove(); } 
+    
+    liveMap = L.map('liveMap').setView([40.4168, -3.7038], 15);
+    
+    // Mapa gratuito de OpenStreetMap
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(liveMap);
+
+    livePolyline = L.polyline([], { color: '#3B82F6', weight: 5, opacity: 0.8 }).addTo(liveMap);
+    liveMarker = L.circleMarker([40.4168, -3.7038], { radius: 7, fillColor: '#3B82F6', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(liveMap);
+}
+
+function initSummaryMap(ruta) {
+    const map = L.map('summaryMap');
+    
+    // Mapa gratuito de OpenStreetMap
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    const latlngs = ruta.map(p => [p[0], p[1]]);
+    const polyline = L.polyline(latlngs, { color: '#3B82F6', weight: 5 }).addTo(map);
+
+    L.circleMarker(latlngs[0], { radius: 8, fillColor: '#10B981', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(map).bindPopup("Inicio");
+    L.circleMarker(latlngs[latlngs.length - 1], { radius: 8, fillColor: '#EF4444', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(map).bindPopup("Fin");
+
+    map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
 }
 
 /* =====================================================
@@ -1503,20 +1536,7 @@ let liveMap = null;
 let livePolyline = null;
 let liveMarker = null;
 
-function initLiveMap() {
-    if (liveMap) { liveMap.remove(); } 
-    
-    liveMap = L.map('liveMap').setView([40.4168, -3.7038], 15);
-    
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 20
-    }).addTo(liveMap);
 
-    livePolyline = L.polyline([], { color: '#3B82F6', weight: 5, opacity: 0.8 }).addTo(liveMap);
-    liveMarker = L.circleMarker([40.4168, -3.7038], { radius: 7, fillColor: '#3B82F6', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(liveMap);
-}
 
 function actualizarMapaEnVivo(lat, lon) {
     if (!liveMap || !livePolyline || !liveMarker) return;
@@ -1581,20 +1601,3 @@ function verCarrera(id, origen) {
     restaurarScroll();
 }
 
-function initSummaryMap(ruta) {
-    const map = L.map('summaryMap');
-    
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 20
-    }).addTo(map);
-
-    const latlngs = ruta.map(p => [p[0], p[1]]);
-    const polyline = L.polyline(latlngs, { color: '#3B82F6', weight: 5 }).addTo(map);
-
-    L.circleMarker(latlngs[0], { radius: 8, fillColor: '#10B981', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(map).bindPopup("Inicio");
-    L.circleMarker(latlngs[latlngs.length - 1], { radius: 8, fillColor: '#EF4444', fillOpacity: 1, color: '#fff', weight: 2 }).addTo(map).bindPopup("Fin");
-
-    map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
-}
