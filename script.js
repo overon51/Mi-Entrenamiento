@@ -5,6 +5,7 @@ let colorBicolorFondo = "#1E293B";
 let colorBicolorAcento = "#3B82F6";
 let contenido = null;
 let misEjercicios = [], rutinas = [], historial = [], ejerciciosOcultos = [], medidasCuerpo = [], notasDias = {}, carreras = [], listasMusica = [], videosGuardados = [], podcastsGuardados = [];
+let imagenesPersonalizadas = {}; 
 let coloresMenu = {}, colorMenuGlobal = "", menuSeleccionado = "todos";
 let tipoCardio = "correr", vozCorrer = true, alturaCm = 0, temaActual = "claro", letraActual = "mediana", colorActual = "#3B82F6", grupoActual = "";
 let origenCarrera = "correr";
@@ -34,7 +35,7 @@ document.addEventListener("DOMContentLoaded", function() {
     contenido = document.getElementById("contenido");
     audioGlobal = document.getElementById("global-audio");
     floatingPlayer = document.getElementById("floating-player");
-
+imagenesPersonalizadas = cargarDatos("imagenesPersonalizadas", {});
     misEjercicios = cargarDatos("misEjercicios", []);
     rutinas = cargarDatos("misRutinas", []);
     historial = cargarDatos("historialEntrenamientos", []);
@@ -89,6 +90,7 @@ function guardarDatos() {
         localStorage.setItem("formaBotonesApp", formaBotones); localStorage.setItem("opacidadColorApp", String(opacidadColor));
       localStorage.setItem("colorBicolorFondo", colorBicolorFondo);
 localStorage.setItem("colorBicolorAcento", colorBicolorAcento);
+      localStorage.setItem("imagenesPersonalizadas", JSON.stringify(imagenesPersonalizadas));
     } catch (e) { aviso("Error al guardar"); }
 }
 
@@ -495,37 +497,109 @@ function toggleGrupoEjercicio(grupo, btn) {
 }
 
 function verDetalleEjercicio(id, grupo) {
-    // Quitamos el guardarScroll() para que no recuerde dónde estabas en la lista
+    guardarScroll();
     const e = obtenerEjercicios().find(x => x.id === id); if (!e) return;
     
-    let htmlImg = "";
-    if (e.img) {
-        htmlImg = `
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0;">
-                <img src="${URL_IMG}${e.img}/0.jpg" style="width:100%; border-radius:12px; background:var(--bg-main); object-fit:cover; aspect-ratio: 1/1; border:1px solid var(--border-color);" loading="lazy">
-                <img src="${URL_IMG}${e.img}/1.jpg" style="width:100%; border-radius:12px; background:var(--bg-main); object-fit:cover; aspect-ratio: 1/1; border:1px solid var(--border-color);" loading="lazy">
-            </div>`;
-    } else {
-        htmlImg = `<div style="display:flex; justify-content:center; align-items:center; height:120px; background:var(--bg-main); border-radius:12px; margin:15px 0; font-size:60px; border:1px solid var(--border-color);">🏋️‍♂️</div>`;
-    }
+    // Lógica para saber si la imagen base es de la base de datos o personalizada
+    const isDB = e.img && !e.img.startsWith('data:image') && !e.img.startsWith('http');
+    
+    // Buscamos si hay imágenes personalizadas para la posición 0 (inicio) y 1 (fin)
+    const srcImg0 = imagenesPersonalizadas[e.id + "_0"] || (isDB ? `${URL_IMG}${e.img}/0.jpg` : e.img || "");
+    const srcImg1 = imagenesPersonalizadas[e.id + "_1"] || (isDB ? `${URL_IMG}${e.img}/1.jpg` : e.img || "");
+
+    const imgHTML = (src, index, label) => `
+        <div style="display:flex; flex-direction:column; align-items:center; gap:6px; width:100%;">
+            ${src ? 
+                `<img src="${src}" style="width:100%; aspect-ratio:1/1; border-radius:12px; background:var(--bg-main); object-fit:cover; border:1px solid var(--border-color);" loading="lazy">` : 
+                `<div style="width:100%; aspect-ratio:1/1; background:var(--bg-main); border-radius:12px; display:flex; justify-content:center; align-items:center; font-size:40px; border:1px solid var(--border-color);">🏋️‍♂️</div>`
+            }
+            <button onclick="mostrarFormularioEditarImagen('${e.id}', '${grupo}', ${index})" style="background:var(--bg-main) !important; border:1px solid var(--border-color) !important; color:var(--text-main) !important; padding:6px 12px !important; border-radius:20px !important; font-size:11px !important; font-weight:bold !important; cursor:pointer; display:flex !important; align-items:center !important; gap:4px !important; width:auto !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                📷 ${label}
+            </button>
+        </div>
+    `;
 
     contenido.innerHTML = `
         <button class="boton-texto" onclick="mostrarEjercicios('${grupo}')" style="color: var(--accent); font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
         <h2>${escaparHTML(e.nombre)}</h2>
         <div style="margin-bottom:10px;"><span class="etiqueta">${e.grupo}</span> <span class="etiqueta">${e.equipo}</span></div>
         
-        ${htmlImg}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0;">
+            ${imgHTML(srcImg0, 0, "Inicio")}
+            ${imgHTML(srcImg1, 1, "Fin")}
+        </div>
         
         <div class="tarjeta-rutina" style="white-space:pre-line; font-size:15px; line-height:1.5; padding:15px;">
             <strong>Descripción:</strong><br>
-            ${escaparHTML(e.descripcion)}
+            ${escaparHTML(e.descripcion || "Sin descripción.")}
         </div>
         
         ${!ejerciciosBase.some(b => b.id === e.id) ? `<button class="boton-texto texto-rojo" style="width:100%; margin-top:20px; font-size:14px;" onclick="eliminarEjercicio('${e.id}')">🗑 Eliminar ejercicio</button>` : ''}
     `;
+    restaurarScroll();
+}
+
+function mostrarFormularioEditarImagen(id, grupo, index) {
+    const e = obtenerEjercicios().find(x => x.id === id); if (!e) return;
+    const nombreImg = index === 0 ? "Inicio" : "Fin";
     
-    // ESTA ES LA MAGIA: Obliga a la pantalla a subir arriba del todo al abrir el ejercicio
-    window.scrollTo(0, 0); 
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="verDetalleEjercicio('${id}', '${grupo}')">◀ Volver</button>
+    <h2>Imagen de ${nombreImg}: ${escaparHTML(e.nombre)}</h2>
+    
+    <label>Subir desde la galería</label>
+    <input type="file" id="editArchivoImg" accept="image/*" style="width:100%; padding:10px; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; color:var(--text-main);">
+    
+    <label style="margin-top:15px;">O pega un enlace de internet</label>
+    <input type="url" id="editUrlImg" placeholder="https://..." style="width:100%; padding:10px; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; color:var(--text-main);">
+    
+    <button onclick="guardarEditarImagen('${id}', '${grupo}', ${index})" style="width:100%;margin-top:20px;background:#10B981;color:white;padding:12px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;">Guardar Imagen</button>
+    <button onclick="restaurarImagenOriginal('${id}', '${grupo}', ${index})" style="width:100%;margin-top:10px;background:transparent;color:#EF4444;padding:12px;border-radius:8px;border:1px solid #EF4444;font-weight:bold;cursor:pointer;">↺ Restaurar original</button>`;
+}
+
+function guardarEditarImagen(id, grupo, index) {
+    const urlManual = document.getElementById("editUrlImg").value.trim();
+    const archivoInput = document.getElementById("editArchivoImg");
+    const archivo = archivoInput.files[0];
+
+    const guardarFinal = (imgData) => {
+        imagenesPersonalizadas[id + "_" + index] = imgData;
+        guardarDatos();
+        aviso("✅ Imagen actualizada");
+        verDetalleEjercicio(id, grupo);
+    };
+
+    if (urlManual) {
+        guardarFinal(urlManual);
+    } else if (archivo) {
+        const lector = new FileReader();
+        lector.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                const MAX_ANCHO = 500;
+                const escala = MAX_ANCHO / img.width;
+                canvas.width = MAX_ANCHO;
+                canvas.height = img.height * escala;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.7); 
+                guardarFinal(dataUrl);
+            };
+            img.src = e.target.result;
+        };
+        lector.readAsDataURL(archivo);
+    } else {
+        aviso("Selecciona un archivo o pega un enlace.");
+    }
+}
+
+function restaurarImagenOriginal(id, grupo, index) {
+    confirmar("¿Quieres quitar esta imagen y usar la original?", () => {
+        delete imagenesPersonalizadas[id + "_" + index];
+        guardarDatos();
+        aviso("Imagen original restaurada");
+        verDetalleEjercicio(id, grupo);
+    });
 }
 
 function filtrarGrupo(grupo) {
@@ -548,28 +622,72 @@ function filtrarBiblioteca() {
 function mostrarFormularioEjercicio() { 
     guardarScroll();
     contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarEjercicios('${grupoActual}')">◀ Volver</button><h2>Crear ejercicio</h2>
+    
     <label>Nombre</label><input type="text" id="nuevoNombre">
+    
+    <label>Imagen (Galería)</label>
+    <input type="file" id="nuevoArchivoImg" accept="image/*" style="width:100%; padding:10px; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; color:var(--text-main);">
+    
+    <label style="margin-top:10px;">O pega un enlace de imagen (URL)</label>
+    <input type="url" id="nuevoUrlImg" placeholder="https://..." style="width:100%; padding:10px; background:var(--bg-main); border:1px solid var(--border-color); border-radius:8px; color:var(--text-main);">
+    
     <label>Grupo</label><select id="nuevoGrupo"><option value="Compuestos">Compuestos</option><option value="HIIT">HIIT</option><option value="Pecho">Pecho</option><option value="Espalda">Espalda</option><option value="Bíceps">Bíceps</option><option value="Tríceps">Tríceps</option><option value="Hombros">Hombros</option><option value="Piernas">Piernas</option><option value="Abdominales">Abdominales</option></select>
+    
     <label>Equipo</label><select id="nuevoEquipo"><option value="Pesas">Pesas</option><option value="Gomas">Gomas</option><option value="Peso corporal">Peso corporal</option></select>
+    
     <label>Descripción</label><textarea id="nuevaDescripcion"></textarea>
-    <button onclick="guardarNuevoEjercicio()" style="width:100%;margin-top:10px;background:#10B981;color:white;padding:12px;border-radius:8px;border:none;font-weight:bold;">Guardar</button>`; 
+    
+    <button onclick="guardarNuevoEjercicio()" style="width:100%;margin-top:20px;background:#10B981;color:white;padding:12px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;">Guardar Ejercicio</button>`; 
 }
 
 function guardarNuevoEjercicio() { 
     const n = document.getElementById("nuevoNombre").value.trim(); 
-    if (!n) { alert("Falta nombre."); return; } 
+    if (!n) { alert("Falta el nombre del ejercicio."); return; } 
     
-    misEjercicios.push({ 
-        id: generarId(), 
-        nombre: n, 
-        grupo: document.getElementById("nuevoGrupo").value, 
-        equipo: document.getElementById("nuevoEquipo").value, 
-        descripcion: document.getElementById("nuevaDescripcion").value.trim(),
-        img: "" 
-    }); 
-    
-    guardarDatos(); 
-    mostrarEjercicios(grupoActual); 
+    const urlManual = document.getElementById("nuevoUrlImg").value.trim();
+    const archivoInput = document.getElementById("nuevoArchivoImg");
+    const archivo = archivoInput.files[0];
+
+    const guardarFinal = (imgData) => {
+        misEjercicios.push({ 
+            id: generarId(), 
+            nombre: n, 
+            grupo: document.getElementById("nuevoGrupo").value, 
+            equipo: document.getElementById("nuevoEquipo").value, 
+            descripcion: document.getElementById("nuevaDescripcion").value.trim(),
+            img: imgData 
+        }); 
+        guardarDatos(); 
+        mostrarEjercicios(grupoActual);
+        aviso("✅ Ejercicio guardado");
+    };
+
+    if (urlManual) {
+        guardarFinal(urlManual);
+    } else if (archivo) {
+        // Si hay archivo, lo comprimimos para no llenar la memoria
+        const lector = new FileReader();
+        lector.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement("canvas");
+                const MAX_ANCHO = 500; // Tamaño máximo para que no ocupe mucho
+                const escala = MAX_ANCHO / img.width;
+                canvas.width = MAX_ANCHO;
+                canvas.height = img.height * escala;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                // Guardamos la imagen comprimida en Base64
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.7); 
+                guardarFinal(dataUrl);
+            };
+            img.src = e.target.result;
+        };
+        lector.readAsDataURL(archivo);
+    } else {
+        // Si no hay foto, lo guardamos vacío y saldrá el icono de la pesa por defecto
+        guardarFinal("");
+    }
 }
 
 function eliminarEjercicio(id) { confirmar("¿Eliminar este ejercicio?", () => { misEjercicios = misEjercicios.filter(e => e.id !== id); guardarDatos(); mostrarEjercicios(grupoActual); }); }
@@ -638,57 +756,102 @@ function verRutina(i) {
     guardarScroll();
     const r = rutinas[i]; if (!r) return;
     
-    let html = `<button class="boton-texto" onclick="guardarEdicionRutina(${i}, 'lista')" style="color: var(--accent); font-size: 16px; margin-bottom: 15px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${escaparHTML(r.nombre)}</h2>`;
+    if (window.verRutinaId !== i) {
+        window.verRutinaId = i;
+        window.diaVistaRutina = (r.dias && r.dias.length > 0) ? r.dias[0] : "General";
+    }
+    const diaAct = window.diaVistaRutina;
     
-    if (r.dias && r.dias.length > 0) html += `<p style="color:var(--text-muted); font-size:14px; margin-top:-10px; margin-bottom:15px;">Días: <strong style="color:var(--accent);">${r.dias.join(", ")}</strong></p>`;
+    let html = `<button class="boton-texto" onclick="guardarEdicionRutina(${i}, 'lista')" style="color: var(--accent); font-size: 16px; margin-bottom: 15px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 style="margin:0;">${escaparHTML(r.nombre)}</h2>
+        <button onclick="editarDiasRutina(${i})" style="background:var(--bg-main) !important; color:var(--text-main) !important; border:1px solid var(--border-color) !important; padding:8px 12px !important; border-radius:20px !important; font-size:12px !important; font-weight:bold !important; width:auto !important; cursor:pointer;">⚙️ Días</button>
+    </div>`;
+    
+    // AQUÍ ESTÁ EL TRUCO: Usamos <div> en vez de <button> y forzamos el tamaño con !important
+    if (r.dias && r.dias.length > 0) {
+        html += `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px;">`;
+        r.dias.forEach(d => {
+            const activo = d === diaAct;
+            html += `<div onclick="window.diaVistaRutina='${d}'; verRutina(${i})" style="width:42px !important; height:42px !important; min-width:42px !important; border-radius:50% !important; border:1px solid var(--border-color) !important; background:${activo ? 'var(--accent)' : 'var(--bg-main)'} !important; color:${activo ? 'white' : 'var(--text-main)'} !important; font-weight:bold !important; flex-shrink:0 !important; cursor:pointer; display:flex !important; justify-content:center !important; align-items:center !important; font-size:16px !important; padding:0 !important; margin:0 !important; box-sizing:border-box;">${d}</div>`;
+        });
+        html += `</div>`;
+    }
     
     html += `<label>Nombre</label><input type="text" id="rutNombre" value="${escaparHTML(r.nombre)}"><div id="ejerciciosDeRutina" style="margin-top:15px;">`;
     
-    if (r.ejercicios.length === 0) {
-        html += "<p>Sin ejercicios.</p>";
+    const ejsDia = r.ejercicios.filter(e => (e.dia || "General") === diaAct);
+
+    if (ejsDia.length === 0) {
+        html += `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No hay ejercicios para este día.</p>`;
     } else {
-        r.ejercicios.forEach((item, pos) => {
-            const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); 
-            if (!e) return;
-            
+        ejsDia.forEach((item) => {
+            const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
+            const posReal = r.ejercicios.indexOf(item);
             html += `
                 <div class="tarjeta-rutina" style="padding: 10px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;">
                         <h3 style="font-size: 14px; margin: 0; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${escaparHTML(e.nombre)}</h3>
-                        <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${pos})" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; background: transparent; border: none; cursor: pointer;">🗑</button>
+                        <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${posReal})" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; background: transparent; border: none; cursor: pointer;">🗑</button>
                     </div>
                     <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-main); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
                         <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">Series x Reps</span>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <input type="number" id="rutS_${pos}" value="${item.series || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
+                            <input type="number" id="rutS_${posReal}" value="${item.series || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
                             <span style="color: var(--text-muted); font-size: 14px;">x</span>
-                            <input type="number" id="rutR_${pos}" value="${item.repeticiones || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
+                            <input type="number" id="rutR_${posReal}" value="${item.repeticiones || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
     }
     
-    // AQUÍ ESTÁN TODOS LOS BOTONES, INCLUIDO EL DE ELIMINAR AL FINAL
     html += `</div>
         <button style="width:100%;margin-top:15px;background:#3B82F6;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'selector')">+ Añadir ejercicio</button>
         <button style="width:100%;margin-top:10px;background:#10B981;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button>
         <button style="width:100%;margin-top:10px;background:#FF6B6B;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button>
         <button class="boton-texto texto-rojo" style="width:100%;margin-top:15px;font-size:13px;padding-bottom:20px;" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
-        
     contenido.innerHTML = html;
+}
+
+function editarDiasRutina(i) {
+    const r = rutinas[i]; if(!r) return;
+    diasSeleccionadosRutina = r.dias ? [...r.dias] : [];
+    const dias = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+    const botonesDias = dias.map(d => {
+        const activo = diasSeleccionadosRutina.includes(d);
+        return `<button onclick="toggleDia('${d}')" id="dia_${d}" style="flex:1; padding:12px 0; border-radius:8px; background:${activo ? 'var(--accent)' : 'var(--bg-main)'}; color:${activo ? 'white' : 'var(--text-main)'}; border:1px solid var(--border-color); font-weight:bold; cursor:pointer; font-size:16px;">${d}</button>`;
+    }).join("");
+    
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="verRutina(${i})">◀ Volver</button>
+    <h2>Días de la rutina</h2>
+    <p style="color:var(--text-muted); font-size:14px;">Selecciona los días para esta rutina. Si añades días nuevos, se crearán pestañas para ellos.</p>
+    <div style="display:flex; gap:5px; margin-top:15px;" id="selectorDias">${botonesDias}</div>
+    <button onclick="guardarDiasRutina(${i})" style="width:100%;margin-top:20px;background:#10B981;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;">Guardar Días</button>`;
+}
+
+function guardarDiasRutina(i) {
+    rutinas[i].dias = [...diasSeleccionadosRutina];
+    guardarDatos();
+    // Si el día que estaba seleccionado ya no existe, pasamos al primero de la lista
+    if (!rutinas[i].dias.includes(window.diaVistaRutina) && rutinas[i].dias.length > 0) {
+        window.diaVistaRutina = rutinas[i].dias[0];
+    }
+    verRutina(i);
+}
+
+function añadirEjercicioARutina(i, idE) { 
+    const diaAsignado = window.diaVistaRutina || "General";
+    rutinas[i].ejercicios.push({ ejercicioId: idE, series: "", repeticiones: "", dia: diaAsignado }); 
+    guardarDatos(); verRutina(i); 
 }
 
 function guardarEdicionRutina(i, destino) {
     const r = rutinas[i]; const c = document.getElementById("rutNombre"); if (!r || !c) return;
     r.nombre = c.value.trim() || r.nombre;
-    
     for (let p = 0; p < r.ejercicios.length; p++) {
-        const s = document.getElementById("rutS_" + p); 
-        const rp = document.getElementById("rutR_" + p);
+        const s = document.getElementById("rutS_" + p); const rp = document.getElementById("rutR_" + p);
         if (s && rp) { 
-            // Si el input está vacío, guardamos "", si tiene número, guardamos el número
             r.ejercicios[p].series = s.value === "" ? "" : parseInt(s.value); 
             r.ejercicios[p].repeticiones = rp.value === "" ? "" : parseInt(rp.value); 
         }
@@ -705,12 +868,7 @@ function mostrarSelectorEjercicios(i) {
     filtrarEjerciciosParaRutina(i); 
 }
 function filtrarEjerciciosParaRutina(i) { const l = document.getElementById("selectorEjercicios"); if (!l) return; const t = document.getElementById("buscadorRutina").value.toLowerCase(); l.innerHTML = obtenerEjercicios().filter(x => x.nombre.toLowerCase().includes(t)).map(x => `<div class="tarjeta-rutina" style="cursor:pointer;" onclick="añadirEjercicioARutina(${i}, '${x.id}')"><h3>${escaparHTML(x.nombre)}</h3></div>`).join(""); }
-function añadirEjercicioARutina(i, idE) { 
-    // En lugar de 3 y 10 por defecto, ponemos "" para que salgan vacíos
-    rutinas[i].ejercicios.push({ ejercicioId: idE, series: "", repeticiones: "" }); 
-    guardarDatos(); 
-    verRutina(i); 
-}
+
 function eliminarEjercicioRutina(i, pos) { rutinas[i].ejercicios.splice(pos, 1); guardarDatos(); verRutina(i); }
 function eliminarRutina(i) { confirmar("¿Eliminar rutina?", () => { rutinas.splice(i, 1); guardarDatos(); mostrarRutinas(); }); }
 
@@ -724,7 +882,6 @@ function toggleCircuitoEnEntreno() {
 function iniciarCircuitoEntreno() {
     const divBtn = document.getElementById("btnCircEntreno");
     const display = document.getElementById("circEntDisplay");
-
     if (circEntIntervalo && !circEntPausado) {
         clearInterval(circEntIntervalo); circEntIntervalo = null; circEntPausado = true;
         divBtn.innerText = "▶ Reanudar"; divBtn.style.background = "#3B82F6"; return;
@@ -733,16 +890,12 @@ function iniciarCircuitoEntreno() {
         circEntPausado = false; divBtn.innerText = "⏸ Pausar"; divBtn.style.background = "#F59E0B";
         iniciarIntervaloCircuitoEntreno(); return;
     }
-
     circEntConfig.trabajo = parseInt(document.getElementById('circEntTrabajo').value) || 40;
     circEntConfig.descanso = parseInt(document.getElementById('circEntDescanso').value) || 20;
     circEntConfig.rondas = parseInt(document.getElementById('circEntRondas').value) || 5;
     circEntEstado = { ronda: 1, fase: 'trabajo', tiempo: circEntConfig.trabajo };
-
-    display.style.display = 'block';
-    divBtn.innerText = "⏸ Pausar"; divBtn.style.background = "#F59E0B";
-    actualizarVistaCircuitoEntreno();
-    iniciarIntervaloCircuitoEntreno();
+    display.style.display = 'block'; divBtn.innerText = "⏸ Pausar"; divBtn.style.background = "#F59E0B";
+    actualizarVistaCircuitoEntreno(); iniciarIntervaloCircuitoEntreno();
 }
 
 function detenerCircuitoEntreno() {
@@ -759,17 +912,10 @@ function iniciarIntervaloCircuitoEntreno() {
         circEntEstado.tiempo--;
         if (circEntEstado.tiempo <= 0) {
             if (circEntEstado.fase === 'trabajo') {
-                if (circEntEstado.ronda >= circEntConfig.rondas) { 
-                    detenerCircuitoEntreno(); 
-                    aviso("¡Circuito terminado!"); 
-                    if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
-                    return; 
-                }
-                circEntEstado.fase = 'descanso'; circEntEstado.tiempo = circEntConfig.descanso;
-                if (navigator.vibrate) navigator.vibrate([300]);
+                if (circEntEstado.ronda >= circEntConfig.rondas) { detenerCircuitoEntreno(); aviso("¡Circuito terminado!"); if (navigator.vibrate) navigator.vibrate([300, 150, 300]); return; }
+                circEntEstado.fase = 'descanso'; circEntEstado.tiempo = circEntConfig.descanso; if (navigator.vibrate) navigator.vibrate([300]);
             } else {
-                circEntEstado.ronda++; circEntEstado.fase = 'trabajo'; circEntEstado.tiempo = circEntConfig.trabajo;
-                if (navigator.vibrate) navigator.vibrate([500]);
+                circEntEstado.ronda++; circEntEstado.fase = 'trabajo'; circEntEstado.tiempo = circEntConfig.trabajo; if (navigator.vibrate) navigator.vibrate([500]);
             }
         }
         actualizarVistaCircuitoEntreno();
@@ -786,11 +932,13 @@ function actualizarVistaCircuitoEntreno() {
 
 function iniciarEntrenamientoEnVivo(i) {
     const r = rutinas[i]; if (!r) return;
+    const diaAct = window.diaVistaRutina || "General";
+    const ejsEntreno = r.ejercicios.filter(e => (e.dia || "General") === diaAct);
     
-    // Panel para configurar el HIIT arriba del todo
+    if (ejsEntreno.length === 0) { aviso("No hay ejercicios para este día."); return; }
+
     let html = `
-        <h2>${escaparHTML(r.nombre)}</h2>
-        
+        <h2>${escaparHTML(r.nombre)} <span style="font-size:14px; color:var(--accent);">(${diaAct})</span></h2>
         <div style="background:var(--bg-main); border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid var(--border-color);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <h3 style="margin:0; font-size:14px;">⏱️ Modo Circuito HIIT</h3>
@@ -803,102 +951,38 @@ function iniciarEntrenamientoEnVivo(i) {
                     <input type="number" id="circEntRondas" placeholder="Rondas" value="5" style="width:33%; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); text-align:center;">
                 </div>
                 <button onclick="iniciarCircuitoEntreno()" id="btnCircEntreno" style="width:100%; background:#10B981; color:white; padding:8px; border-radius:6px; font-weight:bold; border:none; margin-bottom:8px; cursor:pointer;">▶ Iniciar Circuito</button>
-                <div id="circEntDisplay" style="display:none; text-align:center; padding:10px; background:var(--bg-card); border-radius:8px;">
-                    <span id="circEntFase" style="font-size:14px; font-weight:bold;"></span>
-                    <div id="circEntTiempo" style="font-size:36px; font-weight:800; font-family:monospace;"></div>
-                </div>
+                <div id="circEntDisplay" style="display:none; text-align:center; padding:10px; background:var(--bg-card); border-radius:8px;"><span id="circEntFase" style="font-size:14px; font-weight:bold;"></span><div id="circEntTiempo" style="font-size:36px; font-weight:800; font-family:monospace;"></div></div>
             </div>
         </div>
-
         <div class="reloj reloj-compacto" style="padding: 12px; margin-bottom: 12px;">
             <div id="tiempo" style="font-size:36px; margin: 5px 0;">00:00</div>
-            <div class="grid-opciones-descanso" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;">
-                <button onclick="cronoDescanso(30)">30s</button>
-                <button onclick="cronoDescanso(45)">45s</button>
-                <button onclick="cronoDescanso(60)">60s</button>
-                <button onclick="cronoDescanso(90)">90s</button>
-            </div>
-        </div>
-    `;
+            <div class="grid-opciones-descanso" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;"><button onclick="cronoDescanso(30)">30s</button><button onclick="cronoDescanso(45)">45s</button><button onclick="cronoDescanso(60)">60s</button><button onclick="cronoDescanso(90)">90s</button></div>
+        </div>`;
     
-    r.ejercicios.forEach((item, idx) => {
+    ejsEntreno.forEach((item, idx) => {
         const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
         let inputsSeries = "";
-        for (let s = 1; s <= item.series; s++) {
-            // Le he puesto color blanco a la letra (color: #FFF) para que se lea bien
-            inputsSeries += `<div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 5px;"><span style="font-size: 11px; color: var(--text-muted);">#${s}</span><input type="number" id="reps_${idx}_${s}" value="${item.repeticiones}" style="width: 40px; padding: 2px; margin: 0; text-align: center; font-size: 14px; font-weight:bold; border: none; background: transparent; color: #FFFFFF;"></div>`;
-        }
+        for (let s = 1; s <= item.series; s++) { inputsSeries += `<div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 5px;"><span style="font-size: 11px; color: var(--text-muted);">#${s}</span><input type="number" id="reps_${idx}_${s}" value="${item.repeticiones}" style="width: 40px; padding: 2px; margin: 0; text-align: center; font-size: 14px; font-weight:bold; border: none; background: transparent; color: #FFFFFF;"></div>`; }
         html += `<div class="tarjeta-rutina" style="padding: 10px 12px; margin-top: 8px;"><h3 style="font-size: 14px; margin: 0 0 8px 0;">${escaparHTML(e.nombre)}</h3><div style="display: flex; gap: 6px; flex-wrap: wrap;">${inputsSeries}</div></div>`;
     });
+    
     html += `<button style="width:100%;margin-top:15px;min-height:50px;background:#10B981;color:#fff;font-weight:bold;border:none;border-radius:var(--radio);cursor:pointer;" onclick="finalizarEntrenamientoEnVivo(${i})">✔ Finalizar y Guardar</button>`;
-    contenido.innerHTML = html;
-    actualizarVistaCronometro();
-}
-
-function iniciarEntrenamientoEnVivo(i) {
-    const r = rutinas[i]; if (!r) return;
-    let html = `
-        <h2>${escaparHTML(r.nombre)}</h2>
-        <div class="reloj reloj-compacto" style="padding: 12px; margin-bottom: 12px;">
-            <div id="tiempo" style="font-size:36px; margin: 5px 0;">00:00</div>
-            <div class="grid-opciones-descanso" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;">
-                <button onclick="cronoDescanso(30)">30s</button>
-                <button onclick="cronoDescanso(45)">45s</button>
-                <button onclick="cronoDescanso(60)">60s</button>
-                <button onclick="cronoDescanso(90)">90s</button>
-            </div>
-        </div>
-    `;
-    
-    r.ejercicios.forEach((item, idx) => {
-        const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
-        
-        let inputsSeries = "";
-        for (let s = 1; s <= item.series; s++) {
-            inputsSeries += `
-                <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 5px;">
-                    <span style="font-size: 11px; color: var(--text-muted);">#${s}</span>
-                    <input type="number" id="reps_${idx}_${s}" value="${item.repeticiones}" style="width: 40px; padding: 2px; margin: 0; text-align: center; font-size: 13px; border: none; background: transparent;">
-                </div>
-            `;
-        }
-
-        html += `
-            <div class="tarjeta-rutina" style="padding: 10px 12px; margin-top: 8px;">
-                <h3 style="font-size: 14px; margin: 0 0 8px 0;">${escaparHTML(e.nombre)}</h3>
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    ${inputsSeries}
-                </div>
-            </div>
-        `;
-    });
-    
-    html += `<button style="width:100%;margin-top:15px;min-height:50px;background:#10B981;color:#fff;" onclick="finalizarEntrenamientoEnVivo(${i})">✔ Finalizar y Guardar</button>`;
-    contenido.innerHTML = html;
-    actualizarVistaCronometro();
+    contenido.innerHTML = html; actualizarVistaCronometro();
 }
 
 function finalizarEntrenamientoEnVivo(i) {
     const r = rutinas[i]; const detalle = []; let tS = 0, tR = 0;
-    r.ejercicios.forEach((item, idx) => { 
-        const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return; 
-        const series = []; 
-        for (let s = 1; s <= item.series; s++) { 
-            const inp = document.getElementById(`reps_${idx}_${s}`); 
-            const reps = parseInt(inp ? inp.value : 0) || 0; 
-            series.push({ reps }); 
-            tS++; 
-            tR += reps; 
-        } 
-        detalle.push({ ejercicioId: item.ejercicioId, nombre: e.nombre, series }); 
+    const diaAct = window.diaVistaRutina || "General";
+    const ejsEntreno = r.ejercicios.filter(e => (e.dia || "General") === diaAct);
+
+    ejsEntreno.forEach((item, idx) => {
+        const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
+        const series = [];
+        for (let s = 1; s <= item.series; s++) { const inp = document.getElementById(`reps_${idx}_${s}`); const reps = parseInt(inp ? inp.value : 0) || 0; series.push({ reps }); tS++; tR += reps; }
+        detalle.push({ ejercicioId: item.ejercicioId, nombre: e.nombre, series });
     });
-    
-    historial.push({ id: generarId(), fecha: obtenerFechaActual(), rutina: r.nombre, ejercicios: detalle.length, series: tS, repeticiones: tR, detalle });
-    guardarDatos(); 
-    aviso(`¡Guardado!`); 
-    
-    // AQUÍ ESTÁ EL CAMBIO: Vuelve a la lista de rutinas
-    mostrarRutinas(); 
+    historial.push({ id: generarId(), fecha: obtenerFechaActual(), rutina: `${r.nombre} (${diaAct})`, ejercicios: detalle.length, series: tS, repeticiones: tR, detalle });
+    guardarDatos(); aviso(`¡Guardado!`); mostrarRutinas();
 }
 
 /* =====================================================
@@ -910,8 +994,7 @@ function obtenerUltimoPeso() { const s = medidasCuerpo.slice().sort((a, b) => a.
 
 function mostrarProgreso() {
     guardarScroll();
-    const uP = obtenerUltimoPeso();
-    const imc = uP ? calcularIMC(uP.valor) : null;
+    const uP = obtenerUltimoPeso(); const imc = uP ? calcularIMC(uP.valor) : null;
     const selMetricas = `<button class="chip chip-medida activo">Peso</button>`;
     let serie = medidasCuerpo.map(r => ({ fecha: r.fecha, valor: r.peso })).filter(p => p.valor).sort((a,b) => a.fecha.localeCompare(b.fecha));
     let graficaHTML = "<p>Sin registros.</p>";
@@ -934,28 +1017,18 @@ function mostrarProgreso() {
     contenido.innerHTML = `
         <h2>Progreso</h2>
         <button onclick="mostrarFormularioCuerpo()" style="width:100%; background:var(--accent); color:white; margin-bottom:15px; border:none; padding:12px; border-radius:var(--radio); font-weight:bold; cursor:pointer;">+ Añadir registro</button>
-        
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
             <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:10px;"><h3 style="font-size:20px; color:var(--accent); margin:0;">${uP ? formatoNum(uP.valor) : "-"}</h3><span style="font-size:11px;">Peso (kg)</span></div>
             <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:10px;"><h3 style="font-size:20px; color:var(--accent); margin:0;">${imc ? formatoNum(imc) : "-"}</h3><span style="font-size:11px;">IMC</span></div>
             <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:10px; cursor:pointer;" onclick="mostrarFormularioAltura()"><h3 style="font-size:20px; color:var(--accent); margin:0;">${alturaCm ? formatoNum(alturaCm) : "-"}</h3><span style="font-size:11px;">Altura (cm)</span></div>
         </div>
-
         <h3>📈 Evolución</h3>
         <div class="selector-chips">${selMetricas}</div>
         ${graficaHTML}
-
         <h3 style="margin-top:20px;">Registros</h3>
         <div style="display:flex; flex-direction:column; gap:8px;">
-            ${medidasCuerpo.slice().reverse().map(r => `
-                <div style="padding:12px 15px; display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border-radius:8px; border:1px solid var(--border-color);">
-                    <span style="font-size:14px; color:var(--text-muted); font-weight:bold;">${formatearFecha(r.fecha)}</span>
-                    <strong style="font-size:16px; color:var(--accent); flex:1; text-align:center;">${formatoNum(r.peso)} kg</strong>
-                    <button style="color:#EF4444; padding:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:18px; background:transparent; border:none; cursor:pointer;" onclick="eliminarRegistroCuerpo('${r.id}')">🗑</button>
-                </div>
-            `).join("")}
-        </div>
-    `;
+            ${medidasCuerpo.slice().reverse().map(r => `<div style="padding:12px 15px; display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border-radius:8px; border:1px solid var(--border-color);"><span style="font-size:14px; color:var(--text-muted); font-weight:bold;">${formatearFecha(r.fecha)}</span><strong style="font-size:16px; color:var(--accent); flex:1; text-align:center;">${formatoNum(r.peso)} kg</strong><button style="color:#EF4444; padding:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:18px; background:transparent; border:none; cursor:pointer;" onclick="eliminarRegistroCuerpo('${r.id}')">🗑</button></div>`).join("")}
+        </div>`;
     restaurarScroll();
 }
 
@@ -1147,28 +1220,16 @@ function abrirDia(f) {
     const n = notasDias[f] || [];
     
     const hE = e.length === 0 ? "<p>No hay entrenamientos.</p>" : e.map(i => `<div class="tarjeta-rutina"><h3>${escaparHTML(i.rutina)}</h3><p>${i.series} series</p><button class="boton-texto texto-rojo" style="margin-top:10px;" onclick="eliminarHistorial('${i.id}')">🗑 Eliminar</button></div>`).join("");
-    
     const hC = c.length === 0 ? "" : `<h3>🏃 Cardio</h3>${c.map(x => `<div class="tarjeta-rutina"><p style="margin:0;">${resumenCarrera(x)}</p></div>`).join("")}`;
     
-    // AQUÍ ESTÁ EL ARREGLO DEL PUNTO 5
-    const hN = n.length === 0 ? "<p>No hay anotaciones.</p>" : n.map(x => `
-        <div style="padding:12px 15px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border-radius:8px; border:1px solid var(--border-color);">
-            <span style="font-size:14px; color:var(--text-main); flex:1; padding-right:10px;">${escaparHTML(x.texto)}</span>
-            <button style="color:#EF4444; padding:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:18px; background:transparent; border:none; cursor:pointer;" onclick="eliminarNota('${f}','${x.id}')">🗑</button>
-        </div>
-    `).join("");
+    const hN = n.length === 0 ? "<p>No hay anotaciones.</p>" : n.map(x => `<div style="padding:12px 15px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border-radius:8px; border:1px solid var(--border-color);"><span style="font-size:14px; color:var(--text-main); flex:1; padding-right:10px;">${escaparHTML(x.texto)}</span><button style="color:#EF4444; padding:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:18px; background:transparent; border:none; cursor:pointer;" onclick="eliminarNota('${f}','${x.id}')">🗑</button></div>`).join("");
     
     contenido.innerHTML = `
         <button class="boton-texto" onclick="verMes(${mesActual})" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
         <h2>${formatearFecha(f)}</h2>
-        
-        <h3>🏋️ Entrenamientos</h3>
-        ${hE}
-        ${hC}
-        
+        <h3>🏋️ Entrenamientos</h3>${hE}${hC}
         <h3>📝 Anotaciones</h3>
         <div style="margin-bottom:20px;">${hN}</div>
-        
         <div class="tarjeta-rutina" style="padding:15px;">
             <h3 style="margin-top:0;">Nueva anotación</h3>
             <textarea id="notaTexto" placeholder="Escribe aquí..." style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); min-height:80px; margin-bottom:10px;"></textarea>
@@ -1630,7 +1691,6 @@ function mostrarVideos() {
                 <span style="font-size:14px; color:var(--text-main);">🎥 ${escaparHTML(v.nombre)}</span>
                 <button onclick="event.stopPropagation(); eliminarVideoDirecto('${v.id}')" style="background:transparent; border:none; color:#EF4444; font-size:18px; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">🗑</button>
             </div>
-            <!-- El reproductor se abre justo debajo del título -->
             <div id="player_${v.id}" style="display:none; padding:0 15px 15px 15px;"></div>
         </div>
     `).join("");
@@ -1645,6 +1705,27 @@ function mostrarVideos() {
         ${l}
     `;
     restaurarScroll();
+}
+
+function reproducirVideoEnLista(id) {
+    const v = videosGuardados.find(x => x.id === id); if (!v) return;
+    const info = detectarTipoVideo(v.url);
+    const div = document.getElementById(`player_${id}`);
+    if (!div) return;
+    const scrollActual = window.scrollY;
+
+    if (div.style.display === "block") {
+        div.style.display = "none";
+        div.innerHTML = "";
+    } else {
+        div.style.display = "block";
+        if (info.tipo === "youtube") {
+            div.innerHTML = `<iframe width="100%" height="220" src="https://www.youtube.com/embed/${info.id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen frameborder="0" style="border-radius:12px; margin-top:0;"></iframe>`;
+        } else {
+            div.innerHTML = `<p>Enlace no válido.</p>`;
+        }
+    }
+    requestAnimationFrame(() => { window.scrollTo({ top: scrollActual, behavior: 'instant' }); });
 }
 
 // Actualizamos esta función para que use el cuadro flotante
