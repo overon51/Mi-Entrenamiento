@@ -327,6 +327,7 @@ const URL_IMG = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main
 function ex(id, nombre, grupo, equipo, compuesto, descripcion, img) { return { id, nombre, grupo, equipo, compuesto, descripcion, img: img || "" }; }
 
 const ejerciciosBase = [
+    // --- PECHO ---
     ex("e1", "Press de banca con barra", "Pecho", "Pesas", true, "Tumbado en el banco, baja la barra al pecho y empuja hacia arriba.", "Barbell_Bench_Press_-_Medium_Grip"),
     ex("e2", "Press de banca con mancuernas", "Pecho", "Pesas", true, "Tumbado, baja las mancuernas a los lados del pecho y empuja.", "Dumbbell_Bench_Press"),
     ex("e3", "Press inclinado con mancuernas", "Pecho", "Pesas", true, "Banco a 30-45 grados. Empuja las mancuernas hacia arriba.", "Incline_Dumbbell_Press"),
@@ -338,6 +339,8 @@ const ejerciciosBase = [
     ex("e9", "Fondos en paralelas (pecho)", "Pecho", "Peso corporal", true, "Inclina el torso hacia adelante y baja flexionando los codos.", "Dips_-_Chest_Version"),
     ex("e10", "Press de pecho con goma", "Pecho", "Gomas", true, "Goma por la espalda, sujeta los extremos y empuja al frente.", "Band_Press"),
     ex("e11", "Aperturas con goma", "Pecho", "Gomas", false, "Goma por la espalda, abre los brazos en arco.", "Band_Chest_Fly"),
+
+    // --- ESPALDA ---
     ex("e12", "Dominadas", "Espalda", "Peso corporal", true, "Cuélgate de la barra y tira hasta pasar la barbilla.", "Pullups"),
     ex("e13", "Jalón al pecho en polea", "Espalda", "Polea", true, "Sentado, tira de la barra hacia la parte alta del pecho.", "Wide-Grip_Lat_Pulldown"),
     ex("e14", "Remo con barra", "Espalda", "Pesas", true, "Torso inclinado, tira de la barra hacia el abdomen.", "Bent_Over_Barbell_Row"),
@@ -351,6 +354,8 @@ const ejerciciosBase = [
     ex("e22", "Superman", "Espalda", "Peso corporal", false, "Boca abajo, eleva brazos y piernas simultáneamente.", "Superman"),
     ex("e23", "Remo con goma", "Espalda", "Gomas", true, "Goma en los pies, tira de los extremos hacia el abdomen.", "Seated_Band_Row"),
     ex("e24", "Jalón con goma", "Espalda", "Gomas", false, "Goma fijada en alto, tira hacia el pecho.", "Band_Pulldown"),
+
+    // --- PIERNAS ---
     ex("e25", "Sentadilla con barra (trasera)", "Piernas", "Pesas", true, "Barra en trapecios. Baja la cadera como si te sentaras.", "Barbell_Squat"),
     ex("e26", "Sentadilla frontal con barra", "Piernas", "Pesas", true, "Barra apoyada en la parte delantera de los hombros.", "Front_Barbell_Squat"),
     ex("e27", "Sentadilla goblet", "Piernas", "Pesas", true, "Sujeta una mancuerna o kettlebell contra el pecho.", "Goblet_Squat"),
@@ -366,6 +371,8 @@ const ejerciciosBase = [
     ex("e37", "Sentadilla con goma", "Piernas", "Gomas", true, "Pisa la goma y sujeta los extremos en los hombros.", "Band_Squat"),
     ex("e38", "Patada de glúteo en polea", "Piernas", "Polea", false, "Patea hacia atrás con la pierna, apretando el glúteo.", "Glute_Kickback"),
     ex("e39", "Step-up con mancuernas", "Piernas", "Pesas", true, "Sube a un cajón o banco, una pierna a la vez.", "Dumbbell_Step_Ups"),
+
+    // --- HOMBROS ---
     ex("e40", "Press militar con barra", "Hombros", "Pesas", true, "De pie o sentado, empuja la barra por encima de la cabeza.", "Standing_Military_Press"),
     ex("e41", "Press de hombros con mancuernas", "Hombros", "Pesas", true, "Sentado, empuja las mancuernas hacia arriba.", "Dumbbell_Shoulder_Press"),
     ex("e42", "Arnold press", "Hombros", "Pesas", true, "Empieza con mancuernas frente al pecho, gira y empuja.", "Arnold_Dumbbell_Press"),
@@ -376,6 +383,8 @@ const ejerciciosBase = [
     ex("e47", "Elevaciones laterales con goma", "Hombros", "Gomas", false, "Pisa la goma y eleva los brazos a los lados.", "Band_Lateral_Raise"),
     ex("e48", "Press de hombros con goma", "Hombros", "Gomas", true, "Pisa la goma y empuja los extremos hacia arriba.", "Band_Shoulder_Press"),
     ex("e49", "Encogimientos de hombros (trapecio)", "Hombros", "Pesas", false, "Sube los hombros hacia las orejas con mancuernas o barra.", "Dumbbell_Shrug"),
+
+    // --- BÍCEPS ---
     ex("e50", "Curl de bíceps con barra", "Bíceps", "Pesas", false, "De pie, sube la barra flexionando los codos.", "Barbell_Curl"),
     ex("e51", "Curl de bíceps con mancuernas", "Bíceps", "Pesas", false, "Sube las mancuernas alternando o a la vez.", "Dumbbell_Bicep_Curl"),
     ex("e52", "Curl martillo", "Bíceps", "Pesas", false, "Palmas enfrentadas, sube las mancuernas.", "Hammer_Curls"),
@@ -383,6 +392,8 @@ const ejerciciosBase = [
     ex("e54", "Curl concentrado", "Bíceps", "Pesas", false, "Sentado, codo apoyado en el muslo, sube la mancuerna.", "Concentration_Curls"),
     ex("e55", "Curl en polea", "Bíceps", "Polea", false, "De pie frente a la polea baja, flexiona los codos.", "Standing_Bicep_Cable_Curl"),
     ex("e56", "Curl con goma", "Bíceps", "Gomas", false, "Pisa la goma y flexiona los codos.", "Standing_Bicep_Cable_Curl"),
+
+    // --- TRÍCEPS ---
     ex("e57", "Extensión de tríceps en polea", "Tríceps", "Polea", false, "Empuja la cuerda o barra hacia abajo.", "Triceps_Pushdown"),
     ex("e58", "Extensión de tríceps sobre la cabeza", "Tríceps", "Pesas", false, "Sujeta una mancuerna con ambas manos y baja detrás de la nuca.", "Standing_Dumbbell_Triceps_Extension"),
     ex("e59", "Press francés", "Tríceps", "Pesas", false, "Tumbado, baja la barra hacia la frente.", "EZ-Bar_Skullcrusher"),
@@ -390,6 +401,8 @@ const ejerciciosBase = [
     ex("e61", "Fondos en banco", "Tríceps", "Peso corporal", false, "Manos en el banco, baja el cuerpo flexionando los codos.", "Bench_Dips"),
     ex("e62", "Fondos en paralelas (tríceps)", "Tríceps", "Peso corporal", true, "Cuerpo recto, baja flexionando los codos.", "Dips_-_Triceps_Version"),
     ex("e63", "Extensión de tríceps con goma", "Tríceps", "Gomas", false, "Goma fijada en alto, empuja hacia abajo.", "Band_Triceps_Extension"),
+
+    // --- ABDOMINALES ---
     ex("e64", "Plancha frontal", "Abdominales", "Peso corporal", false, "Apoya antebrazos y puntas de pies, mantén el cuerpo recto.", "Plank"),
     ex("e65", "Plancha lateral", "Abdominales", "Peso corporal", false, "De lado, apoya antebrazo y mantén la cadera elevada.", "Side_Bridge"),
     ex("e66", "Crunch abdominal", "Abdominales", "Peso corporal", false, "Tumbado, sube los hombros del suelo.", "Crunches"),
@@ -399,44 +412,43 @@ const ejerciciosBase = [
     ex("e70", "Dead bug", "Abdominales", "Peso corporal", false, "Tumbado, extiende brazo y pierna opuestos.", "Dead_Bug"),
     ex("e71", "Rueda abdominal", "Abdominales", "Pesas", false, "De rodillas, rueda hacia adelante y vuelve.", "Ab_Roller"),
     ex("e72", "Crunch en polea alta", "Abdominales", "Polea", false, "De rodillas, flexiona el torso hacia abajo.", "Cable_Crunch"),
-    ex("e73", "Thruster (Sentadilla + Press)", "Compuestos", "Pesas", true, "Sentadilla y al subir empuja las mancuernas sobre la cabeza."),
-    ex("e74", "Burpees", "Compuestos", "Peso corporal", true, "Flexión, salto y palmada arriba."),
-    ex("e75", "Clean and Press", "Compuestos", "Pesas", true, "Sube la barra al pecho y luego empújala arriba."),
-    ex("e76", "Snatch con mancuerna", "Compuestos", "Pesas", true, "Levanta la mancuerna del suelo a la cabeza en un solo movimiento."),
-    ex("e77", "Kettlebell Swing", "Compuestos", "Pesas", true, "Balancea la pesa rusa entre las piernas y arriba."),
-    ex("e78", "Man Maker", "Compuestos", "Pesas", true, "Flexión, remo, cargada y press con mancuernas."),
-    ex("e79", "Zancada con curl", "Compuestos", "Pesas", true, "Zancada y al subir haz un curl de bíceps."),
-    ex("e80", "Renegade Row", "Compuestos", "Pesas", true, "En plancha con mancuernas, rema alternando brazos."),
-    ex("e81", "Bear Crawl", "Compuestos", "Peso corporal", true, "Gatea manteniendo las rodillas cerca del suelo."),
-    ex("e82", "Wall Balls", "Compuestos", "Pesas", true, "Sentadilla y lanza un balón medicinal a la pared."),
-    ex("e83", "Jumping Jacks", "Cardio", "Peso corporal", false, "Salta abriendo piernas y brazos."),
-    ex("e84", "High Knees", "Cardio", "Peso corporal", false, "Corre en el sitio elevando las rodillas."),
-    ex("e85", "Jump Squats", "Cardio", "Peso corporal", true, "Sentadilla y salto explosivo."),
-    ex("e86", "Box Jumps", "Cardio", "Peso corporal", true, "Salta sobre un cajón."),
-    ex("e87", "Saltar la cuerda", "Cardio", "Peso corporal", false, "Salta la cuerda a ritmo."),
-    ex("e88", "Battle Ropes", "Cardio", "Pesas", false, "Ondula las cuerdas rápidamente."),
-    ex("e89", "Sentadilla con goma", "Piernas", "Gomas", true, "Pisa la goma y sube contra resistencia."),
-    ex("e90", "Peso muerto con goma", "Piernas", "Gomas", true, "Pisa la goma y estira la cadera."),
-    ex("e91", "Press de pecho con goma", "Pecho", "Gomas", true, "Goma por la espalda, empuja al frente."),
-    ex("e92", "Remo con goma", "Espalda", "Gomas", true, "Goma en los pies, tira al abdomen."),
-    ex("e93", "Jalón con goma", "Espalda", "Gomas", false, "Goma arriba, tira al pecho."),
-    ex("e94", "Elevaciones laterales con goma", "Hombros", "Gomas", false, "Pisa la goma y eleva los brazos."),
-    ex("e95", "Curl de bíceps con goma", "Bíceps", "Gomas", false, "Pisa la goma y flexiona los codos."),
-    ex("e96", "Extensión de tríceps con goma", "Tríceps", "Gomas", false, "Goma alta, empuja hacia abajo."),
-    ex("e97", "Patada de glúteo con goma", "Piernas", "Gomas", false, "Goma en los tobillos, patea hacia atrás."),
-    ex("e98", "Abducción de cadera con goma", "Piernas", "Gomas", false, "Goma en los muslos, abre las piernas.")
+
+    // --- COMPUESTOS ---
+    ex("e73", "Thruster (Sentadilla + Press)", "Compuestos", "Pesas", true, "Sentadilla y al subir empuja las mancuernas sobre la cabeza.", "Kettlebell_Thruster"),
+    ex("e74", "Burpees", "Compuestos", "Peso corporal", true, "Flexión, salto y palmada arriba.", "Burpee"),
+    ex("e75", "Clean and Press", "Compuestos", "Pesas", true, "Sube la barra al pecho y luego empújala arriba.", "Barbell_Clean_and_Press"),
+    ex("e76", "Snatch con mancuerna", "Compuestos", "Pesas", true, "Levanta la mancuerna del suelo a la cabeza en un solo movimiento.", "Dumbbell_Snatch"),
+    ex("e77", "Kettlebell Swing", "Compuestos", "Pesas", true, "Balancea la pesa rusa entre las piernas y arriba.", "Kettlebell_Swing"),
+    ex("e78", "Man Maker", "Compuestos", "Pesas", true, "Flexión, remo, cargada y press con mancuernas.", "Man_Maker"),
+    ex("e79", "Zancada con curl", "Compuestos", "Pesas", true, "Zancada y al subir haz un curl de bíceps.", "Dumbbell_Lunge_and_Curl"),
+    ex("e80", "Renegade Row", "Compuestos", "Pesas", true, "En plancha con mancuernas, rema alternando brazos.", "Renegade_Row"),
+    ex("e81", "Bear Crawl", "Compuestos", "Peso corporal", true, "Gatea manteniendo las rodillas cerca del suelo.", "Bear_Crawl"),
+    ex("e82", "Wall Balls", "Compuestos", "Pesas", true, "Sentadilla y lanza un balón medicinal a la pared.", "Wall_Ball"),
+    
+    // --- NUEVOS EJERCICIOS HIIT CON FOTOS REALES ---
+    ex("e83", "Jumping Jacks", "HIIT", "Peso corporal", false, "Salta abriendo piernas y brazos a la vez.", "Star_Jump"),
+    ex("e84", "High Knees", "HIIT", "Peso corporal", false, "Corre en el sitio elevando las rodillas todo lo posible.", "Trail_Running"),
+    ex("e85", "Jump Squats", "HIIT", "Peso corporal", true, "Sentadilla profunda y salto explosivo hacia arriba.", "Jump_Squat"),
+    ex("e86", "Box Jumps", "HIIT", "Peso corporal", true, "Salta sobre un cajón o escalón alto y baja suave.", "Box_Jump"),
+    ex("e87", "Saltar la cuerda", "Cardio", "Peso corporal", false, "Salta la cuerda a ritmo constante.", "Rope_Jumping"),
+    ex("e88", "Battle Ropes", "HIIT", "Pesas", false, "Ondula las cuerdas pesadas rápidamente con los brazos.", "Battling_Ropes"),
+    ex("e89", "Sprint en el sitio", "HIIT", "Peso corporal", false, "Corre a máxima velocidad sin moverte del sitio.", "Running_Treadmill"),
+    ex("e90", "Skater Jumps", "HIIT", "Peso corporal", true, "Salta de lado a lado como un patinador.", "Lateral_Bound"),
+    ex("e91", "Plank Jacks", "HIIT", "Peso corporal", true, "En plancha, salta abriendo y cerrando las piernas.", "Plank_Jacks"),
+    ex("e92", "Sentadilla con salto a una pierna", "HIIT", "Peso corporal", true, "Salto explosivo a una sola pierna.", "Single_Leg_Squat")
 ];
 
 function obtenerEjercicios() { return [...ejerciciosBase.filter(e => !ejerciciosOcultos.includes(e.id)), ...misEjercicios]; }
 const GRUPOS_EJERCICIO = [
     { nombre: "Compuestos", color: "#8B5CF6", filtro: "Compuestos" },
+    { nombre: "HIIT", color: "#D9D919", filtro: "HIIT" }, // <--- Nueva categoría
     { nombre: "Pecho", color: "#EF4444", filtro: "Pecho" }, 
     { nombre: "Espalda", color: "#3B82F6", filtro: "Espalda" },
-    { nombre: "Bíceps", color: "#EC4899", filtro: "Bíceps" }, 
-    { nombre: "Tríceps", color: "#F97316", filtro: "Tríceps" },
+    { nombre: "Bíceps", color: "#A67D3D", filtro: "Bíceps" }, 
+    { nombre: "Tríceps", color: "#C0C0C0", filtro: "Tríceps" },
     { nombre: "Hombros", color: "#F59E0B", filtro: "Hombros" }, 
     { nombre: "Piernas", color: "#10B981", filtro: "Piernas" },
-    { nombre: "Abdominales", color: "#14B8A6", filtro: "Abdominales" }
+    { nombre: "Abdominales", color: "#FF00FF", filtro: "Abdominales" }
 ];
 
 function mostrarEjercicios(grupoAbierto) {
@@ -483,18 +495,37 @@ function toggleGrupoEjercicio(grupo, btn) {
 }
 
 function verDetalleEjercicio(id, grupo) {
-    guardarScroll();
+    // Quitamos el guardarScroll() para que no recuerde dónde estabas en la lista
     const e = obtenerEjercicios().find(x => x.id === id); if (!e) return;
-    let htmlImg = e.img ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0;"><img src="${URL_IMG}${e.img}/images/0.jpg" style="width:100%;border-radius:12px;" loading="lazy"><img src="${URL_IMG}${e.img}/images/1.jpg" style="width:100%;border-radius:12px;" loading="lazy"></div>` : "";
     
+    let htmlImg = "";
+    if (e.img) {
+        htmlImg = `
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:15px 0;">
+                <img src="${URL_IMG}${e.img}/0.jpg" style="width:100%; border-radius:12px; background:var(--bg-main); object-fit:cover; aspect-ratio: 1/1; border:1px solid var(--border-color);" loading="lazy">
+                <img src="${URL_IMG}${e.img}/1.jpg" style="width:100%; border-radius:12px; background:var(--bg-main); object-fit:cover; aspect-ratio: 1/1; border:1px solid var(--border-color);" loading="lazy">
+            </div>`;
+    } else {
+        htmlImg = `<div style="display:flex; justify-content:center; align-items:center; height:120px; background:var(--bg-main); border-radius:12px; margin:15px 0; font-size:60px; border:1px solid var(--border-color);">🏋️‍♂️</div>`;
+    }
+
     contenido.innerHTML = `
         <button class="boton-texto" onclick="mostrarEjercicios('${grupo}')" style="color: var(--accent); font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
         <h2>${escaparHTML(e.nombre)}</h2>
-        <div style="margin-bottom:10px;"><span class="etiqueta">${e.grupo}</span></div>
+        <div style="margin-bottom:10px;"><span class="etiqueta">${e.grupo}</span> <span class="etiqueta">${e.equipo}</span></div>
+        
         ${htmlImg}
-        <div class="tarjeta-rutina" style="white-space:pre-line;">${escaparHTML(e.descripcion)}</div>
-        ${!ejerciciosBase.some(b => b.id === e.id) ? `<button class="boton-texto texto-rojo" onclick="eliminarEjercicio('${e.id}')">🗑 Eliminar</button>` : ''}
+        
+        <div class="tarjeta-rutina" style="white-space:pre-line; font-size:15px; line-height:1.5; padding:15px;">
+            <strong>Descripción:</strong><br>
+            ${escaparHTML(e.descripcion)}
+        </div>
+        
+        ${!ejerciciosBase.some(b => b.id === e.id) ? `<button class="boton-texto texto-rojo" style="width:100%; margin-top:20px; font-size:14px;" onclick="eliminarEjercicio('${e.id}')">🗑 Eliminar ejercicio</button>` : ''}
     `;
+    
+    // ESTA ES LA MAGIA: Obliga a la pantalla a subir arriba del todo al abrir el ejercicio
+    window.scrollTo(0, 0); 
 }
 
 function filtrarGrupo(grupo) {
@@ -516,9 +547,31 @@ function filtrarBiblioteca() {
 
 function mostrarFormularioEjercicio() { 
     guardarScroll();
-    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarEjercicios('${grupoActual}')">◀ Volver</button><h2>Crear ejercicio</h2><label>Nombre</label><input type="text" id="nuevoNombre"><label>Grupo</label><select id="nuevoGrupo"><option value="Compuestos">Compuestos</option><option value="Pecho">Pecho</option><option value="Espalda">Espalda</option><option value="Bíceps">Bíceps</option><option value="Tríceps">Tríceps</option><option value="Hombros">Hombros</option><option value="Piernas">Piernas</option><option value="Abdominales">Abdominales</option></select><label>Equipo</label><select id="nuevoEquipo"><option value="Pesas">Pesas</option><option value="Gomas">Gomas</option><option value="Peso corporal">Peso corporal</option></select><label>Descripción</label><textarea id="nuevaDescripcion"></textarea><button onclick="guardarNuevoEjercicio()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; 
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarEjercicios('${grupoActual}')">◀ Volver</button><h2>Crear ejercicio</h2>
+    <label>Nombre</label><input type="text" id="nuevoNombre">
+    <label>Grupo</label><select id="nuevoGrupo"><option value="Compuestos">Compuestos</option><option value="HIIT">HIIT</option><option value="Pecho">Pecho</option><option value="Espalda">Espalda</option><option value="Bíceps">Bíceps</option><option value="Tríceps">Tríceps</option><option value="Hombros">Hombros</option><option value="Piernas">Piernas</option><option value="Abdominales">Abdominales</option></select>
+    <label>Equipo</label><select id="nuevoEquipo"><option value="Pesas">Pesas</option><option value="Gomas">Gomas</option><option value="Peso corporal">Peso corporal</option></select>
+    <label>Descripción</label><textarea id="nuevaDescripcion"></textarea>
+    <button onclick="guardarNuevoEjercicio()" style="width:100%;margin-top:10px;background:#10B981;color:white;padding:12px;border-radius:8px;border:none;font-weight:bold;">Guardar</button>`; 
 }
-function guardarNuevoEjercicio() { const n = document.getElementById("nuevoNombre").value.trim(); if (!n) { alert("Falta nombre."); return; } misEjercicios.push({ id: generarId(), nombre: n, grupo: document.getElementById("nuevoGrupo").value, equipo: document.getElementById("nuevoEquipo").value, descripcion: document.getElementById("nuevaDescripcion").value.trim(), img: "" }); guardarDatos(); mostrarEjercicios(grupoActual); }
+
+function guardarNuevoEjercicio() { 
+    const n = document.getElementById("nuevoNombre").value.trim(); 
+    if (!n) { alert("Falta nombre."); return; } 
+    
+    misEjercicios.push({ 
+        id: generarId(), 
+        nombre: n, 
+        grupo: document.getElementById("nuevoGrupo").value, 
+        equipo: document.getElementById("nuevoEquipo").value, 
+        descripcion: document.getElementById("nuevaDescripcion").value.trim(),
+        img: "" 
+    }); 
+    
+    guardarDatos(); 
+    mostrarEjercicios(grupoActual); 
+}
+
 function eliminarEjercicio(id) { confirmar("¿Eliminar este ejercicio?", () => { misEjercicios = misEjercicios.filter(e => e.id !== id); guardarDatos(); mostrarEjercicios(grupoActual); }); }
 
 /* =====================================================
@@ -547,15 +600,49 @@ function elegirPlantilla(i) {
     rutinas.push({ id: generarId(), nombre: p.nombre, ejercicios: ejercicios });
     guardarDatos(); aviso("Rutina creada desde plantilla."); mostrarRutinas();
 }
+
+let diasSeleccionadosRutina = [];
+
 function mostrarFormularioRutina() { 
     guardarScroll();
-    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarRutinas()">◀ Volver</button><h2>Crear rutina</h2><label>Nombre</label><input type="text" id="nombreRutina"><button onclick="crearRutina()" style="width:100%;margin-top:10px;background:#10B981;">Guardar</button>`; 
+    diasSeleccionadosRutina = [];
+    const dias = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+    const botonesDias = dias.map(d => `<button onclick="toggleDia('${d}')" id="dia_${d}" style="flex:1; padding:8px 0; border-radius:8px; background:var(--bg-main); color:var(--text-main); border:1px solid var(--border-color); font-weight:bold; cursor:pointer;">${d}</button>`).join("");
+    
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="mostrarRutinas()">◀ Volver</button><h2>Crear rutina</h2>
+    <label>Nombre</label><input type="text" id="nombreRutina">
+    <label style="margin-top:15px; display:block;">Días de la semana</label>
+    <div style="display:flex; gap:5px; margin-top:5px;" id="selectorDias">${botonesDias}</div>
+    <button onclick="crearRutina()" style="width:100%;margin-top:20px;background:#10B981;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;">Guardar</button>`; 
 }
-function crearRutina() { const n = document.getElementById("nombreRutina").value.trim(); if (!n) return; rutinas.push({ id: generarId(), nombre: n, ejercicios: [] }); guardarDatos(); mostrarRutinas(); }
+
+function toggleDia(d) {
+    const btn = document.getElementById(`dia_${d}`);
+    if (diasSeleccionadosRutina.includes(d)) {
+        diasSeleccionadosRutina = diasSeleccionadosRutina.filter(x => x !== d);
+        btn.style.background = "var(--bg-main)"; btn.style.color = "var(--text-main)";
+    } else {
+        diasSeleccionadosRutina.push(d);
+        btn.style.background = "var(--accent)"; btn.style.color = "white";
+    }
+}
+
+function crearRutina() { 
+    const n = document.getElementById("nombreRutina").value.trim(); 
+    if (!n) return; 
+    rutinas.push({ id: generarId(), nombre: n, dias: diasSeleccionadosRutina, ejercicios: [] }); 
+    guardarDatos(); mostrarRutinas(); 
+}
+
 function verRutina(i) {
     guardarScroll();
     const r = rutinas[i]; if (!r) return;
-    let html = `<button class="boton-texto" onclick="mostrarRutinas()" style="color: var(--accent); font-size: 16px; margin-bottom: 15px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${escaparHTML(r.nombre)}</h2><label>Nombre</label><input type="text" id="rutNombre" value="${escaparHTML(r.nombre)}"><div id="ejerciciosDeRutina" style="margin-top:15px;">`;
+    
+    let html = `<button class="boton-texto" onclick="guardarEdicionRutina(${i}, 'lista')" style="color: var(--accent); font-size: 16px; margin-bottom: 15px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${escaparHTML(r.nombre)}</h2>`;
+    
+    if (r.dias && r.dias.length > 0) html += `<p style="color:var(--text-muted); font-size:14px; margin-top:-10px; margin-bottom:15px;">Días: <strong style="color:var(--accent);">${r.dias.join(", ")}</strong></p>`;
+    
+    html += `<label>Nombre</label><input type="text" id="rutNombre" value="${escaparHTML(r.nombre)}"><div id="ejerciciosDeRutina" style="margin-top:15px;">`;
     
     if (r.ejercicios.length === 0) {
         html += "<p>Sin ejercicios.</p>";
@@ -566,21 +653,16 @@ function verRutina(i) {
             
             html += `
                 <div class="tarjeta-rutina" style="padding: 10px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box;">
-                    
-                    <!-- FILA 1: NOMBRE Y PAPELERA -->
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;">
-                        <!-- Aquí está el truco para que el nombre ocupe 1 sola línea -->
                         <h3 style="font-size: 14px; margin: 0; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${escaparHTML(e.nombre)}</h3>
-                        <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${pos})" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; background: transparent; border: none; cursor: pointer; border-radius: 50%;">🗑</button>
+                        <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${pos})" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; background: transparent; border: none; cursor: pointer;">🗑</button>
                     </div>
-                    
-                    <!-- FILA 2: SERIES Y REPETICIONES -->
                     <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-main); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
                         <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">Series x Reps</span>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <input type="number" id="rutS_${pos}" value="${item.series}" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 14px; border-radius: 6px; border: none; background: rgba(0,0,0,0.2); color: var(--accent); font-weight: bold;">
+                            <input type="number" id="rutS_${pos}" value="${item.series || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
                             <span style="color: var(--text-muted); font-size: 14px;">x</span>
-                            <input type="number" id="rutR_${pos}" value="${item.repeticiones}" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 14px; border-radius: 6px; border: none; background: rgba(0,0,0,0.2); color: var(--accent); font-weight: bold;">
+                            <input type="number" id="rutR_${pos}" value="${item.repeticiones || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
                         </div>
                     </div>
                 </div>
@@ -588,11 +670,12 @@ function verRutina(i) {
         });
     }
     
+    // AQUÍ ESTÁN TODOS LOS BOTONES, INCLUIDO EL DE ELIMINAR AL FINAL
     html += `</div>
-        <button style="width:100%;margin-top:15px;background:#3B82F6;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;" onclick="guardarEdicionRutina(${i}, 'selector')">+ Añadir ejercicio</button>
-        <button style="width:100%;margin-top:10px;background:#10B981;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button>
-        <button style="width:100%;margin-top:10px;background:#FF6B6B;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button>
-        <button class="boton-texto texto-rojo" style="width:100%;margin-top:15px;font-size:13px;" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
+        <button style="width:100%;margin-top:15px;background:#3B82F6;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'selector')">+ Añadir ejercicio</button>
+        <button style="width:100%;margin-top:10px;background:#10B981;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button>
+        <button style="width:100%;margin-top:10px;background:#FF6B6B;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button>
+        <button class="boton-texto texto-rojo" style="width:100%;margin-top:15px;font-size:13px;padding-bottom:20px;" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
         
     contenido.innerHTML = html;
 }
@@ -600,19 +683,157 @@ function verRutina(i) {
 function guardarEdicionRutina(i, destino) {
     const r = rutinas[i]; const c = document.getElementById("rutNombre"); if (!r || !c) return;
     r.nombre = c.value.trim() || r.nombre;
-    for (let p = 0; p < r.ejercicios.length; p++) { const s = document.getElementById("rutS_" + p); const rp = document.getElementById("rutR_" + p); if (s && rp) { r.ejercicios[p].series = parseInt(s.value) || 1; r.ejercicios[p].repeticiones = parseInt(rp.value) || 1; } }
+    
+    for (let p = 0; p < r.ejercicios.length; p++) {
+        const s = document.getElementById("rutS_" + p); 
+        const rp = document.getElementById("rutR_" + p);
+        if (s && rp) { 
+            // Si el input está vacío, guardamos "", si tiene número, guardamos el número
+            r.ejercicios[p].series = s.value === "" ? "" : parseInt(s.value); 
+            r.ejercicios[p].repeticiones = rp.value === "" ? "" : parseInt(rp.value); 
+        }
+    }
     guardarDatos();
-    if (destino === "selector") mostrarSelectorEjercicios(i); else if (destino === "entrenar") iniciarEntrenamientoEnVivo(i); else mostrarRutinas();
+    if (destino === "selector") mostrarSelectorEjercicios(i);
+    else if (destino === "entrenar") iniciarEntrenamientoEnVivo(i);
+    else mostrarRutinas();
 }
+
 function mostrarSelectorEjercicios(i) { 
     guardarScroll();
     contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="verRutina(${i})">◀ Volver</button><h2>Añadir ejercicio</h2><input type="text" id="buscadorRutina" placeholder="Buscar..." oninput="filtrarEjerciciosParaRutina(${i})"><div id="selectorEjercicios"></div>`; 
     filtrarEjerciciosParaRutina(i); 
 }
 function filtrarEjerciciosParaRutina(i) { const l = document.getElementById("selectorEjercicios"); if (!l) return; const t = document.getElementById("buscadorRutina").value.toLowerCase(); l.innerHTML = obtenerEjercicios().filter(x => x.nombre.toLowerCase().includes(t)).map(x => `<div class="tarjeta-rutina" style="cursor:pointer;" onclick="añadirEjercicioARutina(${i}, '${x.id}')"><h3>${escaparHTML(x.nombre)}</h3></div>`).join(""); }
-function añadirEjercicioARutina(i, idE) { rutinas[i].ejercicios.push({ ejercicioId: idE, series: 3, repeticiones: 10 }); guardarDatos(); verRutina(i); }
+function añadirEjercicioARutina(i, idE) { 
+    // En lugar de 3 y 10 por defecto, ponemos "" para que salgan vacíos
+    rutinas[i].ejercicios.push({ ejercicioId: idE, series: "", repeticiones: "" }); 
+    guardarDatos(); 
+    verRutina(i); 
+}
 function eliminarEjercicioRutina(i, pos) { rutinas[i].ejercicios.splice(pos, 1); guardarDatos(); verRutina(i); }
 function eliminarRutina(i) { confirmar("¿Eliminar rutina?", () => { rutinas.splice(i, 1); guardarDatos(); mostrarRutinas(); }); }
+
+let circEntConfig = { trabajo: 40, descanso: 20, rondas: 5 }, circEntEstado = { ronda: 1, fase: 'trabajo', tiempo: 0 }, circEntIntervalo = null, circEntPausado = false;
+
+function toggleCircuitoEnEntreno() {
+    const p = document.getElementById('circuitoEntrenoPanel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+function iniciarCircuitoEntreno() {
+    const divBtn = document.getElementById("btnCircEntreno");
+    const display = document.getElementById("circEntDisplay");
+
+    if (circEntIntervalo && !circEntPausado) {
+        clearInterval(circEntIntervalo); circEntIntervalo = null; circEntPausado = true;
+        divBtn.innerText = "▶ Reanudar"; divBtn.style.background = "#3B82F6"; return;
+    }
+    if (circEntPausado) {
+        circEntPausado = false; divBtn.innerText = "⏸ Pausar"; divBtn.style.background = "#F59E0B";
+        iniciarIntervaloCircuitoEntreno(); return;
+    }
+
+    circEntConfig.trabajo = parseInt(document.getElementById('circEntTrabajo').value) || 40;
+    circEntConfig.descanso = parseInt(document.getElementById('circEntDescanso').value) || 20;
+    circEntConfig.rondas = parseInt(document.getElementById('circEntRondas').value) || 5;
+    circEntEstado = { ronda: 1, fase: 'trabajo', tiempo: circEntConfig.trabajo };
+
+    display.style.display = 'block';
+    divBtn.innerText = "⏸ Pausar"; divBtn.style.background = "#F59E0B";
+    actualizarVistaCircuitoEntreno();
+    iniciarIntervaloCircuitoEntreno();
+}
+
+function detenerCircuitoEntreno() {
+    clearInterval(circEntIntervalo); circEntIntervalo = null; circEntPausado = false;
+    const divBtn = document.getElementById("btnCircEntreno");
+    if(divBtn) { divBtn.innerText = "▶ Iniciar Circuito"; divBtn.style.background = "#10B981"; }
+    const display = document.getElementById("circEntDisplay");
+    if(display) display.style.display = 'none';
+}
+
+function iniciarIntervaloCircuitoEntreno() {
+    clearInterval(circEntIntervalo);
+    circEntIntervalo = setInterval(() => {
+        circEntEstado.tiempo--;
+        if (circEntEstado.tiempo <= 0) {
+            if (circEntEstado.fase === 'trabajo') {
+                if (circEntEstado.ronda >= circEntConfig.rondas) { 
+                    detenerCircuitoEntreno(); 
+                    aviso("¡Circuito terminado!"); 
+                    if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+                    return; 
+                }
+                circEntEstado.fase = 'descanso'; circEntEstado.tiempo = circEntConfig.descanso;
+                if (navigator.vibrate) navigator.vibrate([300]);
+            } else {
+                circEntEstado.ronda++; circEntEstado.fase = 'trabajo'; circEntEstado.tiempo = circEntConfig.trabajo;
+                if (navigator.vibrate) navigator.vibrate([500]);
+            }
+        }
+        actualizarVistaCircuitoEntreno();
+    }, 1000);
+}
+
+function actualizarVistaCircuitoEntreno() {
+    const f = document.getElementById('circEntFase'), t = document.getElementById('circEntTiempo');
+    if (!f || !t) return;
+    f.innerText = `Ronda ${circEntEstado.ronda}/${circEntConfig.rondas} · ${circEntEstado.fase === 'trabajo' ? 'TRABAJO' : 'DESCANSO'}`;
+    f.style.color = circEntEstado.fase === 'trabajo' ? '#10B981' : '#3B82F6';
+    t.innerText = formatoTiempo(circEntEstado.tiempo);
+}
+
+function iniciarEntrenamientoEnVivo(i) {
+    const r = rutinas[i]; if (!r) return;
+    
+    // Panel para configurar el HIIT arriba del todo
+    let html = `
+        <h2>${escaparHTML(r.nombre)}</h2>
+        
+        <div style="background:var(--bg-main); border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid var(--border-color);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h3 style="margin:0; font-size:14px;">⏱️ Modo Circuito HIIT</h3>
+                <button onclick="toggleCircuitoEnEntreno()" style="background:var(--accent); color:white; padding:6px 12px; border-radius:20px; font-size:12px; border:none; cursor:pointer;">Configurar</button>
+            </div>
+            <div id="circuitoEntrenoPanel" style="display:none;">
+                <div style="display:flex; gap:5px; margin-bottom:8px;">
+                    <input type="number" id="circEntTrabajo" placeholder="Trabajo (s)" value="40" style="width:33%; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); text-align:center;">
+                    <input type="number" id="circEntDescanso" placeholder="Descanso (s)" value="20" style="width:33%; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); text-align:center;">
+                    <input type="number" id="circEntRondas" placeholder="Rondas" value="5" style="width:33%; padding:6px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-main); text-align:center;">
+                </div>
+                <button onclick="iniciarCircuitoEntreno()" id="btnCircEntreno" style="width:100%; background:#10B981; color:white; padding:8px; border-radius:6px; font-weight:bold; border:none; margin-bottom:8px; cursor:pointer;">▶ Iniciar Circuito</button>
+                <div id="circEntDisplay" style="display:none; text-align:center; padding:10px; background:var(--bg-card); border-radius:8px;">
+                    <span id="circEntFase" style="font-size:14px; font-weight:bold;"></span>
+                    <div id="circEntTiempo" style="font-size:36px; font-weight:800; font-family:monospace;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="reloj reloj-compacto" style="padding: 12px; margin-bottom: 12px;">
+            <div id="tiempo" style="font-size:36px; margin: 5px 0;">00:00</div>
+            <div class="grid-opciones-descanso" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px;">
+                <button onclick="cronoDescanso(30)">30s</button>
+                <button onclick="cronoDescanso(45)">45s</button>
+                <button onclick="cronoDescanso(60)">60s</button>
+                <button onclick="cronoDescanso(90)">90s</button>
+            </div>
+        </div>
+    `;
+    
+    r.ejercicios.forEach((item, idx) => {
+        const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
+        let inputsSeries = "";
+        for (let s = 1; s <= item.series; s++) {
+            // Le he puesto color blanco a la letra (color: #FFF) para que se lea bien
+            inputsSeries += `<div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 5px;"><span style="font-size: 11px; color: var(--text-muted);">#${s}</span><input type="number" id="reps_${idx}_${s}" value="${item.repeticiones}" style="width: 40px; padding: 2px; margin: 0; text-align: center; font-size: 14px; font-weight:bold; border: none; background: transparent; color: #FFFFFF;"></div>`;
+        }
+        html += `<div class="tarjeta-rutina" style="padding: 10px 12px; margin-top: 8px;"><h3 style="font-size: 14px; margin: 0 0 8px 0;">${escaparHTML(e.nombre)}</h3><div style="display: flex; gap: 6px; flex-wrap: wrap;">${inputsSeries}</div></div>`;
+    });
+    html += `<button style="width:100%;margin-top:15px;min-height:50px;background:#10B981;color:#fff;font-weight:bold;border:none;border-radius:var(--radio);cursor:pointer;" onclick="finalizarEntrenamientoEnVivo(${i})">✔ Finalizar y Guardar</button>`;
+    contenido.innerHTML = html;
+    actualizarVistaCronometro();
+}
 
 function iniciarEntrenamientoEnVivo(i) {
     const r = rutinas[i]; if (!r) return;
@@ -688,11 +909,10 @@ function calcularIMC(p) { if (!alturaCm || !p) return null; return p / Math.pow(
 function obtenerUltimoPeso() { const s = medidasCuerpo.slice().sort((a, b) => a.fecha.localeCompare(b.fecha)); for (let i = s.length - 1; i >= 0; i--) { if (s[i].peso) return { valor: s[i].peso, fecha: s[i].fecha }; } return null; }
 
 function mostrarProgreso() {
-    const uP = obtenerUltimoPeso(); 
+    guardarScroll();
+    const uP = obtenerUltimoPeso();
     const imc = uP ? calcularIMC(uP.valor) : null;
-
     const selMetricas = `<button class="chip chip-medida activo">Peso</button>`;
-
     let serie = medidasCuerpo.map(r => ({ fecha: r.fecha, valor: r.peso })).filter(p => p.valor).sort((a,b) => a.fecha.localeCompare(b.fecha));
     let graficaHTML = "<p>Sin registros.</p>";
     
@@ -704,18 +924,16 @@ function mostrarProgreso() {
         const t0 = textoAFecha(serie[0].fecha).getTime(); const t1 = textoAFecha(serie[serie.length - 1].fecha).getTime();
         const xD = f => serie.length === 1 || t1 === t0 ? izq + (W - izq - der) / 2 : izq + ((textoAFecha(f).getTime() - t0) / (t1 - t0)) * (W - izq - der);
         const yD = val => arr + (1 - (val - min) / (max - min)) * (H - arr - aba);
-        
         let line = "", circ = "";
         const coords = serie.map(x => ({ x: xD(x.fecha), y: yD(x.valor), valor: x.valor }));
         line = `<polyline points="${coords.map(c => c.x.toFixed(1) + "," + c.y.toFixed(1)).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="3"/>`;
         circ = coords.map(c => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="var(--accent)"/><text x="${c.x.toFixed(1)}" y="${(c.y - 8).toFixed(1)}" font-size="10" fill="var(--text-main)" text-anchor="middle">${formatoNum(c.valor)}</text>`).join("");
-        
         graficaHTML = `<div class="caja-grafica" style="padding:10px 0;"><svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto;">${line}${circ}</svg></div>`;
     }
 
     contenido.innerHTML = `
         <h2>Progreso</h2>
-        <button onclick="mostrarFormularioCuerpo()" style="width:100%; background:var(--accent); color:white; margin-bottom:15px; border:none;">+ Añadir registro</button>
+        <button onclick="mostrarFormularioCuerpo()" style="width:100%; background:var(--accent); color:white; margin-bottom:15px; border:none; padding:12px; border-radius:var(--radio); font-weight:bold; cursor:pointer;">+ Añadir registro</button>
         
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:15px;">
             <div class="tarjeta-rutina" style="text-align:center; margin:0; padding:10px;"><h3 style="font-size:20px; color:var(--accent); margin:0;">${uP ? formatoNum(uP.valor) : "-"}</h3><span style="font-size:11px;">Peso (kg)</span></div>
@@ -727,13 +945,13 @@ function mostrarProgreso() {
         <div class="selector-chips">${selMetricas}</div>
         ${graficaHTML}
 
-               <h3 style="margin-top:20px;">Registros</h3>
-        <div style="display:flex; flex-direction:column; gap:6px;">
+        <h3 style="margin-top:20px;">Registros</h3>
+        <div style="display:flex; flex-direction:column; gap:8px;">
             ${medidasCuerpo.slice().reverse().map(r => `
-                <div class="item-mini" style="padding:10px 15px; margin-bottom:0; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:13px; color:var(--text-muted);">${formatearFecha(r.fecha)}</span>
-                    <strong style="font-size:14px; color:var(--text-main);">${formatoNum(r.peso)} kg</strong>
-                    <button class="btn-mini-accion" style="color:#EF4444; padding:4px 8px;" onclick="eliminarRegistroCuerpo('${r.id}')">🗑</button>
+                <div style="padding:12px 15px; display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border-radius:8px; border:1px solid var(--border-color);">
+                    <span style="font-size:14px; color:var(--text-muted); font-weight:bold;">${formatearFecha(r.fecha)}</span>
+                    <strong style="font-size:16px; color:var(--accent); flex:1; text-align:center;">${formatoNum(r.peso)} kg</strong>
+                    <button style="color:#EF4444; padding:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:18px; background:transparent; border:none; cursor:pointer;" onclick="eliminarRegistroCuerpo('${r.id}')">🗑</button>
                 </div>
             `).join("")}
         </div>
@@ -921,14 +1139,45 @@ function verMes(m) {
     restaurarScroll();
 }
 function cambiarMes(d) { mesActual += d; if (mesActual > 11) { mesActual = 0; anioActual++; } if (mesActual < 0) { mesActual = 11; anioActual--; } verMes(mesActual); }
+
 function abrirDia(f) {
     guardarScroll();
-    const e = historial.filter(i => i.fecha === f); const c = carreras.filter(x => x.fecha === f); const n = notasDias[f] || [];
-    const hE = e.length === 0 ? "<p>No hay entrenamientos.</p>" : e.map(i => `<div class="tarjeta-rutina"><h3>${escaparHTML(i.rutina)}</h3><p>${i.series} series</p><button class="boton-texto texto-rojo" onclick="eliminarHistorial('${i.id}')">🗑 Eliminar</button></div>`).join("");
-    const hC = c.length === 0 ? "" : `<h3>🏃 Cardio</h3>${c.map(x => `<div class="tarjeta-rutina"><p>${resumenCarrera(x)}</p></div>`).join("")}`;
-    const hN = n.length === 0 ? "<p>No hay anotaciones.</p>" : n.map(x => `<div class="tarjeta-rutina" style="display:flex; justify-content:space-between;"><span>${escaparHTML(x.texto)}</span><button class="boton-texto texto-rojo" onclick="eliminarNota('${f}','${x.id}')">🗑</button></div>`).join("");
-    contenido.innerHTML = `<button class="boton-texto" onclick="verMes(${mesActual})" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>${formatearFecha(f)}</h2><h3>🏋️ Entrenamientos</h3>${hE}${hC}<h3>📝 Anotaciones</h3>${hN}<div class="tarjeta-rutina"><h3>Nueva anotación</h3><textarea id="notaTexto" placeholder="Escribe aquí..."></textarea><button onclick="guardarNota('${f}')" style="width:100%;">Añadir</button></div>`;
+    const e = historial.filter(i => i.fecha === f);
+    const c = carreras.filter(x => x.fecha === f);
+    const n = notasDias[f] || [];
+    
+    const hE = e.length === 0 ? "<p>No hay entrenamientos.</p>" : e.map(i => `<div class="tarjeta-rutina"><h3>${escaparHTML(i.rutina)}</h3><p>${i.series} series</p><button class="boton-texto texto-rojo" style="margin-top:10px;" onclick="eliminarHistorial('${i.id}')">🗑 Eliminar</button></div>`).join("");
+    
+    const hC = c.length === 0 ? "" : `<h3>🏃 Cardio</h3>${c.map(x => `<div class="tarjeta-rutina"><p style="margin:0;">${resumenCarrera(x)}</p></div>`).join("")}`;
+    
+    // AQUÍ ESTÁ EL ARREGLO DEL PUNTO 5
+    const hN = n.length === 0 ? "<p>No hay anotaciones.</p>" : n.map(x => `
+        <div style="padding:12px 15px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border-radius:8px; border:1px solid var(--border-color);">
+            <span style="font-size:14px; color:var(--text-main); flex:1; padding-right:10px;">${escaparHTML(x.texto)}</span>
+            <button style="color:#EF4444; padding:0; width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:18px; background:transparent; border:none; cursor:pointer;" onclick="eliminarNota('${f}','${x.id}')">🗑</button>
+        </div>
+    `).join("");
+    
+    contenido.innerHTML = `
+        <button class="boton-texto" onclick="verMes(${mesActual})" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button>
+        <h2>${formatearFecha(f)}</h2>
+        
+        <h3>🏋️ Entrenamientos</h3>
+        ${hE}
+        ${hC}
+        
+        <h3>📝 Anotaciones</h3>
+        <div style="margin-bottom:20px;">${hN}</div>
+        
+        <div class="tarjeta-rutina" style="padding:15px;">
+            <h3 style="margin-top:0;">Nueva anotación</h3>
+            <textarea id="notaTexto" placeholder="Escribe aquí..." style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-main); color:var(--text-main); min-height:80px; margin-bottom:10px;"></textarea>
+            <button onclick="guardarNota('${f}')" style="width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">Añadir</button>
+        </div>
+    `;
+    restaurarScroll();
 }
+
 function guardarNota(f) { const t = document.getElementById("notaTexto").value.trim(); if (!t) return; if (!notasDias[f]) notasDias[f] = []; notasDias[f].push({ id: generarId(), texto: t }); guardarDatos(); abrirDia(f); }
 function eliminarNota(f, id) { notasDias[f] = notasDias[f].filter(n => n.id !== id); if (notasDias[f].length === 0) delete notasDias[f]; guardarDatos(); abrirDia(f); }
 function eliminarHistorial(id) { historial = historial.filter(i => i.id !== id); guardarDatos(); mostrarCalendario(); }
@@ -1375,26 +1624,24 @@ function eliminarPodcast(id) { confirmar("¿Eliminar?", () => { podcastsGuardado
 
 function mostrarVideos() {
     guardarScroll();
-    
     const l = videosGuardados.length === 0 ? `<p style="text-align:center;">No hay vídeos guardados.</p>` : videosGuardados.map(v => `
-        <div class="item-mini" onclick="reproducirVideoEnLista('${v.id}', '${v.url}')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:14px; color:var(--text-main);">🎥 ${escaparHTML(v.nombre)}</span>
-            <!-- La papelera ahora llama directamente a eliminarVideoDirecto -->
-            <button onclick="event.stopPropagation(); eliminarVideoDirecto('${v.id}')" style="background:transparent; border:none; color:#EF4444; font-size:18px; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">🗑</button>
+        <div class="item-mini" style="display:flex; flex-direction:column; align-items:stretch; padding:0; margin-bottom:12px; overflow:hidden; border-radius:8px; border:1px solid var(--border-color);">
+            <div onclick="reproducirVideoEnLista('${v.id}')" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; padding:12px 15px;">
+                <span style="font-size:14px; color:var(--text-main);">🎥 ${escaparHTML(v.nombre)}</span>
+                <button onclick="event.stopPropagation(); eliminarVideoDirecto('${v.id}')" style="background:transparent; border:none; color:#EF4444; font-size:18px; width:36px; height:36px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">🗑</button>
+            </div>
+            <!-- El reproductor se abre justo debajo del título -->
+            <div id="player_${v.id}" style="display:none; padding:0 15px 15px 15px;"></div>
         </div>
-        <div id="player_${v.id}" style="margin-bottom:15px;"></div>
     `).join("");
 
     contenido.innerHTML = `
         <h2>Vídeos Guardados</h2>
-        
         <div class="tarjeta-rutina" style="text-align:center; padding:15px 10px; margin-bottom:15px;">
             <p style="margin:0 0 10px 0; font-size:13px;">Abre la app de YouTube si lo prefieres.</p>
             <button onclick="abrirEnlace('https://www.youtube.com')" style="background:#EF4444; width: 70%; margin: 0 auto; display: block; padding: 8px 12px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border: none; cursor: pointer;">▶ Abrir YouTube</button>
         </div>
-
         <button onclick="mostrarFormularioVideo()" style="background:#3B82F6; width: 70%; margin: 0 auto 15px auto; display: block; padding: 8px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border: none; cursor:pointer;">+ Añadir vídeo</button>
-        
         ${l}
     `;
     restaurarScroll();
@@ -1412,7 +1659,35 @@ function eliminarVideoDirecto(id) {
 
 function toggleConfirmacionVideo(id) { const div = document.getElementById(`confirm_${id}`); if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none'; }
 function eliminarVideoDirecto(id) { videosGuardados = videosGuardados.filter(x => x.id !== id); guardarDatos(); mostrarVideos(); aviso("🗑 Vídeo eliminado."); }
-function reproducirVideoEnLista(id, url) { const info = detectarTipoVideo(url); const div = document.getElementById(`player_${id}`); if (!div) return; if (div.innerHTML !== "") { div.innerHTML = ""; return; } if (info.tipo === "youtube") { div.innerHTML = `<iframe width="100%" height="220" src="https://www.youtube.com/embed/${info.id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen frameborder="0" style="border-radius:12px; margin-top:10px;"></iframe>`; } else { div.innerHTML = `<p>Enlace no válido.</p>`; } }
+
+function reproducirVideoEnLista(id) {
+    const v = videosGuardados.find(x => x.id === id); if (!v) return;
+    const info = detectarTipoVideo(v.url);
+    const div = document.getElementById(`player_${id}`);
+    if (!div) return;
+
+    // 1. Apuntamos la posición exacta de la pantalla
+    const scrollActual = window.scrollY;
+
+    if (div.style.display === "block") {
+        div.style.display = "none";
+        div.innerHTML = "";
+    } else {
+        div.style.display = "block";
+        if (info.tipo === "youtube") {
+            // 2. Usamos el código original que te deja expandir la pantalla en la app
+            div.innerHTML = `<iframe width="100%" height="220" src="https://www.youtube.com/embed/${info.id}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen frameborder="0" style="border-radius:12px; margin-top:0;"></iframe>`;
+        } else {
+            div.innerHTML = `<p>Enlace no válido.</p>`;
+        }
+    }
+
+    // 3. Devolvemos la pantalla a la posición exacta donde estaba
+    requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollActual, behavior: 'instant' });
+    });
+}
+
 function mostrarFormularioVideo() { 
     guardarScroll();
     contenido.innerHTML = `<button class="boton-texto" onclick="mostrarVideos()" style="color: #3B82F6; font-size: 16px; margin-bottom: 20px; display: inline-block; font-weight: bold; padding: 0;">◀ Volver</button><h2>Nuevo vídeo</h2><label>Nombre</label><input type="text" id="videoNombre"><label>Enlace de YouTube</label><input type="url" id="videoUrl"><button onclick="guardarVideo()" class="boton-mini" style="margin-top:20px; background:#10B981; color:white;">Guardar vídeo</button>`; 
