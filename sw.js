@@ -1,4 +1,4 @@
-const CACHE_NAME = 'entrenamiento-v21'; // <--- Cambia este número cada vez que subas algo
+const CACHE_NAME = 'entrenamiento-v22'; // <--- Cambia este número cada vez que subas algo
 const ARCHIVOS = [
     './',
     './index.html',
