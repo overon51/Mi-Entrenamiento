@@ -1916,7 +1916,15 @@ function mostrarAjustes() {
         ${aj("opacidad", "Opacidad del color", Math.round(opacidadColor * 100) + "%", `<p style="margin-bottom:10px;">Ajusta la transparencia de los colores.</p><input type="range" min="10" max="100" value="${opacidadColor * 100}" oninput="cambiarOpacidad(this.value)" style="width:100%; accent-color: var(--accent);">`)}
         ${aj("color", "Color de diseño", "Elegido", htmlPaleta(colorActual, "cambiarColorPrincipal"))}
         ${aj("menu", "Color de botones", hayMenuPersonal ? "Personalizado" : "Como el diseño", `<p>Elige qué botón quieres cambiar, o «Todos».</p><div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(85px, 1fr)); gap:6px; margin-bottom:15px;">${chipsMenu}</div><p class="texto-ultima">Cambiando: <strong>${textoCambiando}</strong></p>${htmlPaleta(colorObjetivo, "cambiarColorBoton")}<button onclick="restaurarColoresMenu()" style="width:100%; margin-top:12px; background:#3B82F6;">Usar color del diseño en todos</button>`)}
-        ${aj("version", "Actualizaciones", "v15", `<button onclick="buscarActualizaciones()" style="width:100%;background:#10B981;">🔄 Buscar actualizaciones</button>`)}
+        ${aj("version", "Actualizaciones", "v15", `
+    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #EF4444; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+        <p style="color: var(--text-main); font-size: 13px; margin: 0 0 10px 0; line-height: 1.4;">
+            <strong>⚠️ ATENCIÓN:</strong> Actualizar la app puede borrar tus rutinas y pesos. <strong>Descarga tu copia antes de continuar.</strong>
+        </p>
+        <button onclick="exportarDatos()" style="width:100%; background:#10B981; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; margin-bottom:8px;">📥 1. Descargar copia</button>
+        <button onclick="buscarActualizaciones()" style="width:100%; background:#3B82F6; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">🔄 2. Buscar actualizaciones</button>
+    </div>
+`)}
         ${aj("copia", "Copia de seguridad", "", `<p style="margin-bottom:10px;">Guarda tus datos.</p><button onclick="exportarDatos()" style="width:100%;">📥 Descargar copia</button><button onclick="importarDatos()" style="width:100%;margin-top:10px;">📤 Importar copia</button>`)}`;
     
     restaurarScroll();
@@ -1945,7 +1953,6 @@ async function obtenerVersionInstalada() {
 async function buscarActualizaciones() {
     if (!navigator.onLine) { aviso("Sin conexión a internet."); return; }
     aviso("Buscando actualizaciones...");
-    
     try {
         let versionActual = "Desconocida";
         if ('caches' in window) {
@@ -1953,17 +1960,25 @@ async function buscarActualizaciones() {
             const cache = claves.find(k => k.startsWith('entrenamiento-'));
             if (cache) versionActual = cache.replace('entrenamiento-', '');
         }
-
+        
         const r = await fetch("sw.js?ts=" + Date.now(), { cache: "no-store" });
         const texto = await r.text();
         const match = texto.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
         
         if (!match) { aviso("No se pudo leer la versión nueva."); return; }
         let versionNueva = match[1].replace('entrenamiento-', '');
-
+        
         if (versionNueva !== versionActual) {
-            confirmar(`Hay una versión nueva (${versionNueva}).\nTú tienes la (${versionActual}).\n\n¿Quieres actualizar y reiniciar?`, () => {
-                actualizarApp();
+            // AQUÍ SALTA EL AVISO CONJUNTO
+            confirmar(`¡Hay una versión nueva (${versionNueva})!\n\nTienes la versión (${versionActual}).\n\n⚠️ Para no perder tus rutinas y pesos, pulsa "Sí" para descargar una copia de seguridad AHORA.`, () => {
+                exportarDatos(); // Descarga el archivo JSON de inmediato
+                
+                // Le damos 2 segundos al móvil para procesar la descarga y luego le preguntamos si quiere reiniciar
+                setTimeout(() => {
+                    confirmar("✅ Copia descargada en tu móvil.\n\n¿Quieres reiniciar la app AHORA para aplicar la actualización?", () => {
+                        actualizarApp(); // Esto borra la caché y recarga
+                    });
+                }, 2000);
             });
         } else {
             aviso(`✅ Ya tienes la última versión (${versionActual}).`);
