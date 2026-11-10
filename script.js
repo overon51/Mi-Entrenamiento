@@ -10,7 +10,7 @@ let coloresMenu = {}, colorMenuGlobal = "", menuSeleccionado = "todos";
 let tipoCardio = "correr", vozCorrer = true, alturaCm = 0, temaActual = "claro", letraActual = "mediana", colorActual = "#3B82F6", grupoActual = "";
 let origenCarrera = "correr";
 let formaBotones = "redondeado", opacidadColor = 1;
-
+let pantallaBloqueada = false;
 let metricaActual = "peso", periodoActual = 0;
 let cronoIntervalo = null, cronoModo = "parado", cronoMs = 0, cronoInicio = 0, cronoFin = 0, cronoColor = "";
 let mesActual = new Date().getMonth(), anioActual = new Date().getFullYear(), diaSeleccionado = null;
@@ -752,8 +752,9 @@ function crearRutina() {
     guardarDatos(); mostrarRutinas(); 
 }
 
-function verRutina(i) {
-    guardarScroll();
+function verRutina(i, bajarAlFinal) {
+    if (!bajarAlFinal) guardarScroll();
+    
     const r = rutinas[i]; if (!r) return;
     
     if (window.verRutinaId !== i) {
@@ -768,7 +769,6 @@ function verRutina(i) {
         <button onclick="editarDiasRutina(${i})" style="background:var(--bg-main) !important; color:var(--text-main) !important; border:1px solid var(--border-color) !important; padding:8px 12px !important; border-radius:20px !important; font-size:12px !important; font-weight:bold !important; width:auto !important; cursor:pointer;">⚙️ Días</button>
     </div>`;
     
-    // AQUÍ ESTÁ EL TRUCO: Usamos <div> en vez de <button> y forzamos el tamaño con !important
     if (r.dias && r.dias.length > 0) {
         html += `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:10px;">`;
         r.dias.forEach(d => {
@@ -785,11 +785,16 @@ function verRutina(i) {
     if (ejsDia.length === 0) {
         html += `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">No hay ejercicios para este día.</p>`;
     } else {
-        ejsDia.forEach((item) => {
+        ejsDia.forEach((item, index) => {
             const e = obtenerEjercicios().find(x => x.id === item.ejercicioId); if (!e) return;
             const posReal = r.ejercicios.indexOf(item);
+            
+            // Le damos un ID especial al último ejercicio de la lista
+            const esElUltimo = index === ejsDia.length - 1;
+            const idTarget = esElUltimo ? ' id="ultimo-ejercicio-añadido"' : '';
+
             html += `
-                <div class="tarjeta-rutina" style="padding: 10px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box;">
+                <div class="tarjeta-rutina"${idTarget} style="padding: 10px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px; box-sizing: border-box;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;">
                         <h3 style="font-size: 14px; margin: 0; font-weight: bold; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${escaparHTML(e.nombre)}</h3>
                         <button class="boton-texto texto-rojo" onclick="eliminarEjercicioRutina(${i}, ${posReal})" style="padding: 0; width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; background: transparent; border: none; cursor: pointer;">🗑</button>
@@ -797,9 +802,9 @@ function verRutina(i) {
                     <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-main); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; box-sizing: border-box;">
                         <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">Series x Reps</span>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <input type="number" id="rutS_${posReal}" value="${item.series || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
+                            <input type="number" id="rutS_${posReal}" value="${item.series || ''}" placeholder="0" onfocus="this.select(); setTimeout(() => this.scrollIntoView({behavior: 'smooth', block: 'center'}), 400);" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
                             <span style="color: var(--text-muted); font-size: 14px;">x</span>
-                            <input type="number" id="rutR_${posReal}" value="${item.repeticiones || ''}" placeholder="0" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
+                            <input type="number" id="rutR_${posReal}" value="${item.repeticiones || ''}" placeholder="0" onfocus="this.select(); setTimeout(() => this.scrollIntoView({behavior: 'smooth', block: 'center'}), 400);" style="width: 45px; padding: 6px 0; text-align: center; margin: 0; font-size: 15px; border-radius: 6px; border: none; background: rgba(0,0,0,0.3); color: #FFFFFF; font-weight: bold;">
                         </div>
                     </div>
                 </div>`;
@@ -811,7 +816,21 @@ function verRutina(i) {
         <button style="width:100%;margin-top:10px;background:#10B981;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'lista')">💾 Guardar</button>
         <button style="width:100%;margin-top:10px;background:#FF6B6B;color:white;border:none;padding:12px;border-radius:var(--radio);font-weight:bold;cursor:pointer;" onclick="guardarEdicionRutina(${i}, 'entrenar')">▶ ENTRENAR</button>
         <button class="boton-texto texto-rojo" style="width:100%;margin-top:15px;font-size:13px;padding-bottom:20px;" onclick="eliminarRutina(${i})">🗑 Eliminar rutina</button>`;
+        
     contenido.innerHTML = html;
+
+    // Si venimos de añadir un ejercicio, buscamos ESE ejercicio en concreto y lo centramos
+    if (bajarAlFinal) {
+        setTimeout(() => { 
+            const ultimoEj = document.getElementById("ultimo-ejercicio-añadido");
+            if (ultimoEj) {
+                // 'center' hace que el ejercicio se quede en medio de la pantalla, justo encima del teclado
+                ultimoEj.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+            }
+        }, 200);
+    } else {
+        restaurarScroll();
+    }
 }
 
 function editarDiasRutina(i) {
@@ -843,7 +862,10 @@ function guardarDiasRutina(i) {
 function añadirEjercicioARutina(i, idE) { 
     const diaAsignado = window.diaVistaRutina || "General";
     rutinas[i].ejercicios.push({ ejercicioId: idE, series: "", repeticiones: "", dia: diaAsignado }); 
-    guardarDatos(); verRutina(i); 
+    guardarDatos(); 
+    
+    // Llamamos a verRutina y le decimos que baje (true)
+    verRutina(i, true); 
 }
 
 function guardarEdicionRutina(i, destino) {
@@ -863,10 +885,17 @@ function guardarEdicionRutina(i, destino) {
 }
 
 function mostrarSelectorEjercicios(i) { 
-    guardarScroll();
-    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="verRutina(${i})">◀ Volver</button><h2>Añadir ejercicio</h2><input type="text" id="buscadorRutina" placeholder="Buscar..." oninput="filtrarEjerciciosParaRutina(${i})"><div id="selectorEjercicios"></div>`; 
+    contenido.innerHTML = `<button class="boton-texto texto-volver" onclick="verRutina(${i})">◀ Volver</button><h2>Añadir ejercicio</h2><input type="text" id="buscadorRutina" placeholder="Buscar..." oninput="filtrarEjerciciosParaRutina(${i})"><div id="selectorEjercicios" style="margin-top:15px;"></div>`; 
     filtrarEjerciciosParaRutina(i); 
+    
+    // Damos 100ms para que el móvil pinte la pantalla, y luego subimos y abrimos el teclado
+    setTimeout(() => { 
+        window.scrollTo({ top: 0, behavior: 'instant' }); 
+        const buscador = document.getElementById("buscadorRutina");
+        if (buscador) buscador.focus(); 
+    }, 100);
 }
+
 function filtrarEjerciciosParaRutina(i) { const l = document.getElementById("selectorEjercicios"); if (!l) return; const t = document.getElementById("buscadorRutina").value.toLowerCase(); l.innerHTML = obtenerEjercicios().filter(x => x.nombre.toLowerCase().includes(t)).map(x => `<div class="tarjeta-rutina" style="cursor:pointer;" onclick="añadirEjercicioARutina(${i}, '${x.id}')"><h3>${escaparHTML(x.nombre)}</h3></div>`).join(""); }
 
 function eliminarEjercicioRutina(i, pos) { rutinas[i].ejercicios.splice(pos, 1); guardarDatos(); verRutina(i); }
@@ -1354,38 +1383,37 @@ function elegirTipoCardio(c) { tipoCardio = c; mostrarCorrer(); }
 
 function mostrarCorrer() {
     guardarScroll();
-    const tipo = correr.estado === "parado" ? tipoCardio : correr.tipo; 
+    const tipo = correr.estado === "parado" ? tipoCardio : correr.tipo;
     const t = tiposCardio[tipo];
-    
-    let b = correr.estado === "parado" 
-        ? `<button class="boton-iniciar ancho-completo" style="grid-column:1/-1;" onclick="empezarCorrer()">▶ Empezar</button>` 
-        : correr.estado === "corriendo" 
-        ? `<button style="background:#F59E0B; color:white;" onclick="pausarCorrer()">⏸ Pausar</button><button class="boton-pausar" onclick="terminarCorrer(event)">⏹ Terminar</button>` 
+
+    let b = correr.estado === "parado"
+        ? `<button class="boton-iniciar ancho-completo" style="grid-column:1/-1;" onclick="empezarCorrer()">▶ Empezar</button>`
+        : correr.estado === "corriendo"
+        ? `<button style="background:#F59E0B; color:white;" onclick="pausarCorrer()">⏸ Pausar</button><button class="boton-pausar" onclick="terminarCorrer(event)">⏹ Terminar</button>`
         : `<button class="boton-iniciar" onclick="continuarCorrer()">▶ Continuar</button><button class="boton-pausar" onclick="terminarCorrer(event)">⏹ Terminar</button>`;
-        
-    const sel = correr.estado === "parado" 
-        ? `<div class="selector-chips">${Object.keys(tiposCardio).map(k => `<button class="chip ${k === tipoCardio ? "activo" : ""}" onclick="elegirTipoCardio('${k}')">${tiposCardio[k].icono} ${tiposCardio[k].nombre}</button>`).join("")}</div>` 
+
+    const sel = correr.estado === "parado"
+        ? `<div class="selector-chips">${Object.keys(tiposCardio).map(k => `<button class="chip ${k === tipoCardio ? "activo" : ""}" onclick="elegirTipoCardio('${k}')">${tiposCardio[k].icono} ${tiposCardio[k].nombre}</button>`).join("")}</div>`
         : `<h3>${t.icono} ${t.nombre}</h3>`;
-        
+
     const cG = t.gps ? `<div class="dato-resumen"><strong id="correrDist">0,00</strong><span>km</span></div><div class="dato-resumen"><strong id="correrRitmo">–</strong><span>${t.ritmo ? "min/km" : "km/h"}</span></div>` : "";
-    
+
     const historialHTML = carreras.slice().reverse().map(c => {
         const info = tiposCardio[tipoDe(c)];
         return `
         <div class="item-mini" onclick="verCarrera('${c.id}', 'correr')" style="cursor:pointer; margin-bottom: 8px; padding: 12px 15px;">
             <div style="display:flex; align-items:center; gap:10px;">
                 <span style="font-size:20px;">${info.icono}</span>
-                <div>
-                    <strong style="font-size:14px; color:var(--text-main);">${info.nombre}</strong><br>
-                    <span style="font-size:12px; color:var(--text-muted);">${formatearFecha(c.fecha)}</span>
-                </div>
+                <div><strong style="font-size:14px; color:var(--text-main);">${info.nombre}</strong><br><span style="font-size:12px; color:var(--text-muted);">${formatearFecha(c.fecha)}</span></div>
             </div>
             <span style="color:var(--text-muted); font-size: 18px;">▸</span>
-        </div>
-    `}).join("");
+        </div>`;
+    }).join("");
 
-    // NUEVO: Contenedor del mapa en vivo
     const mapaVivoDiv = `<div id="liveMap" style="height: 220px; width: 100%; border-radius: 12px; margin-bottom: 15px; display: none; z-index: 1;"></div>`;
+
+    // BOTÓN DE BLOQUEO (Solo aparece si está corriendo)
+    const botonBloqueo = correr.estado === "corriendo" ? `<button onclick="bloquearPantallaCorrer()" style="margin-top:15px; width:100%; background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">🔒 Bloquear pantalla (evitar toques)</button>` : "";
 
     contenido.innerHTML = `
         <h2>Cardio 🏃</h2>
@@ -1395,20 +1423,84 @@ function mostrarCorrer() {
             <div style="font-size:52px; font-weight:800; text-align:center; font-family:monospace;" id="correrTiempo">00:00</div>
             <div class="resumen-progreso">${cG}<div class="dato-resumen" style="grid-column:1/-1;"><strong id="correrKcal">0</strong><span>kcal</span></div></div>
             <div class="botones-correr">${b}</div>
+            ${botonBloqueo}
         </div>
-        
         <h3 style="margin-top:20px;">Historial</h3>
-        ${historialHTML}
-    `;
+        ${historialHTML}`;
 
-    // Si estamos corriendo, inicializamos el mapa en vivo
     if (correr.estado === "corriendo" && t.gps) {
         document.getElementById("liveMap").style.display = "block";
         initLiveMap();
     }
-
     actualizarVistaCorrer();
     restaurarScroll();
+}
+
+function bloquearPantallaCorrer() {
+    pantallaBloqueada = true;
+    // Pedimos al móvil que no apague la pantalla
+    if ('wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').catch(err => console.log(err));
+    }
+
+    // Creamos la capa oscura que bloquea todo
+    const overlay = document.createElement("div");
+    overlay.id = "overlay-bloqueo";
+    overlay.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; padding: 20px; box-sizing: border-box;";
+    
+    overlay.innerHTML = `
+        <h2 style="font-size: 24px; margin-bottom: 10px;">${tiposCardio[correr.tipo].icono} ${tiposCardio[correr.tipo].nombre}</h2>
+        <p style="color: #aaa; margin-bottom: 30px;">Pantalla bloqueada. La app sigue funcionando.</p>
+        
+        <div style="font-size: 60px; font-weight: bold; font-family: monospace; margin-bottom: 20px;" id="tiempo-bloqueo">${formatoTiempo(Math.floor(tiempoCorrerMs() / 1000))}</div>
+        <div style="font-size: 30px; color: var(--accent); font-weight: bold; margin-bottom: 40px;" id="dist-bloqueo">${formatoKm(correr.distM / 1000)} km</div>
+        
+        <button id="btn-desbloquear" style="background: #EF4444; color: white; border: none; padding: 20px 40px; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; transition: transform 0.2s;">Mantener pulsado para desbloquear</button>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Actualizamos los datos de la capa de bloqueo cada segundo
+    const intervalBloqueo = setInterval(() => {
+        const tB = document.getElementById("tiempo-bloqueo");
+        const dB = document.getElementById("dist-bloqueo");
+        if (tB && dB) {
+            tB.innerText = formatoTiempo(Math.floor(tiempoCorrerMs() / 1000));
+            dB.innerText = formatoKm(correr.distM / 1000) + " km";
+        } else {
+            clearInterval(intervalBloqueo);
+        }
+    }, 1000);
+
+    // Lógica para desbloquear (Mantener pulsado 1.5 segundos)
+    const btnDesc = document.getElementById("btn-desbloquear");
+    let timeoutDesbloqueo;
+
+    const iniciarDesbloqueo = (e) => {
+        e.preventDefault();
+        btnDesc.style.transform = "scale(0.95)";
+        btnDesc.innerText = "Sigue pulsando...";
+        timeoutDesbloqueo = setTimeout(() => {
+            pantallaBloqueada = false;
+            overlay.remove();
+            clearInterval(intervalBloqueo);
+            if ('wakeLock' in navigator && navigator.wakeLock.release) {
+                navigator.wakeLock.release().catch(err => console.log(err));
+            }
+        }, 1500);
+    };
+
+    const cancelarDesbloqueo = () => {
+        clearTimeout(timeoutDesbloqueo);
+        btnDesc.style.transform = "scale(1)";
+        btnDesc.innerText = "Mantener pulsado para desbloquear";
+    };
+
+    btnDesc.addEventListener("touchstart", iniciarDesbloqueo);
+    btnDesc.addEventListener("touchend", cancelarDesbloqueo);
+    btnDesc.addEventListener("mousedown", iniciarDesbloqueo);
+    btnDesc.addEventListener("mouseup", cancelarDesbloqueo);
+    btnDesc.addEventListener("mouseleave", cancelarDesbloqueo);
 }
 
 function toggleConfirmacionCarrera(id) {
@@ -1432,6 +1524,9 @@ function pausarCorrer() { if (correr.estado !== "corriendo") return; correr.acum
 function continuarCorrer() { if (correr.estado !== "pausado") return; correr.estado = "corriendo"; correr.inicio = Date.now(); correr.ultimaPos = null; iniciarGps(); iniciarTickCorrer(); mostrarCorrer(); }
 
 function terminarCorrer(evento) { 
+  pantallaBloqueada = false;
+const ov = document.getElementById("overlay-bloqueo");
+if (ov) ov.remove();
     if (correr.estado === "parado") return; 
     const d = Math.round(tiempoCorrerMs() / 1000); 
     
