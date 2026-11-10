@@ -2148,7 +2148,46 @@ function restaurarEjerciciosBase() { if (ejerciciosOcultos.length === 0) { aviso
 
 
 function exportarDatos() { try { const b = new Blob([JSON.stringify({ misEjercicios, rutinas, historial, medidasCuerpo, notasDias, carreras, listasMusica, videosGuardados, podcastsGuardados, coloresMenu, colorMenuGlobal }, null, 2)], { type: "application/json" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `copia.json`; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); } catch (e) { aviso("Error"); } }
-function importarDatos() { const t = prompt("Pega el texto de la copia:"); if (!t) return; try { const d = JSON.parse(t); if (d.misEjercicios) misEjercicios = d.misEjercicios; if (d.rutinas) rutinas = d.rutinas; if (d.historial) historial = d.historial; if (d.carreras) carreras = d.carreras; guardarDatos(); aviso("Importado."); mostrarAjustes(); } catch (e) { aviso("Copia no válida."); } }
+function importarDatos() {
+    // Creamos un selector de archivos invisible
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".json,application/json";
+    
+    inp.onchange = () => {
+        const file = inp.files[0];
+        if (!file) return;
+        
+        const lector = new FileReader();
+        lector.onload = () => {
+            try {
+                const d = JSON.parse(lector.result);
+                confirmar("¿Quieres reemplazar todos tus datos actuales por los de este archivo?", () => {
+                    if (d.misEjercicios) misEjercicios = d.misEjercicios;
+                    if (d.rutinas) rutinas = d.rutinas;
+                    if (d.historial) historial = d.historial;
+                    if (d.carreras) carreras = d.carreras;
+                    if (d.medidasCuerpo) medidasCuerpo = d.medidasCuerpo;
+                    if (d.notasDias) notasDias = d.notasDias;
+                    if (d.listasMusica) listasMusica = d.listasMusica;
+                    if (d.videosGuardados) videosGuardados = d.videosGuardados;
+                    if (d.podcastsGuardados) podcastsGuardados = d.podcastsGuardados;
+                    if (d.coloresMenu) coloresMenu = d.coloresMenu;
+                    
+                    guardarDatos();
+                    aviso("✅ Datos importados correctamente.");
+                    mostrarInicio();
+                });
+            } catch (e) {
+                alert("El archivo no es válido o está dañado.");
+            }
+        };
+        lector.readAsText(file);
+    };
+    
+    // Abrimos el explorador de archivos del móvil
+    inp.click();
+}
 
 /* =====================================================
    COMPARTIR ENLACES
