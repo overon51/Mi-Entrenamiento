@@ -15,10 +15,13 @@ let metricaActual = "peso", periodoActual = 0;
 let cronoIntervalo = null, cronoModo = "parado", cronoMs = 0, cronoInicio = 0, cronoFin = 0, cronoColor = "";
 let mesActual = new Date().getMonth(), anioActual = new Date().getFullYear(), diaSeleccionado = null;
 let correr = nuevoEstadoCorrer();
-
+let videoEnCardioAbierto = false;
+let videoEnCardioActivo = "";
 let playlistActual = [], indiceCancion = 0;
 let audioGlobal = null, floatingPlayer = null;
 let posicionScroll = 0;
+let audioSilenciosoCtx = null;
+let audioSilenciosoOsc = null;
 
 function guardarScroll() { 
     posicionScroll = window.scrollY; 
@@ -1382,6 +1385,12 @@ function tiempoCorrerMs() { return correr.estado === "corriendo" ? correr.acumMs
 function elegirTipoCardio(c) { tipoCardio = c; mostrarCorrer(); }
 
 function mostrarCorrer() {
+    // ESTAS 4 LÍNEAS SON LAS NUEVAS: Si el entrenamiento está parado, cerramos el vídeo
+    if (correr.estado === "parado") {
+        videoEnCardioAbierto = false;
+        videoEnCardioActivo = "";
+    }
+
     guardarScroll();
     const tipo = correr.estado === "parado" ? tipoCardio : correr.tipo;
     const t = tiposCardio[tipo];
@@ -1412,8 +1421,25 @@ function mostrarCorrer() {
 
     const mapaVivoDiv = `<div id="liveMap" style="height: 220px; width: 100%; border-radius: 12px; margin-bottom: 15px; display: none; z-index: 1;"></div>`;
 
-    // BOTÓN DE BLOQUEO (Solo aparece si está corriendo)
-    const botonBloqueo = correr.estado === "corriendo" ? `<button onclick="bloquearPantallaCorrer()" style="margin-top:15px; width:100%; background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">🔒 Bloquear pantalla (evitar toques)</button>` : "";
+    const botonBloqueo = correr.estado === "corriendo" ? `<button onclick="bloquearPantallaCorrer()" style="margin-top:10px; width:100%; background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;">🔒 Bloquear pantalla (evitar toques)</button>` : "";
+
+    const panelVideo = `
+        <div style="margin-top:15px; background:var(--bg-main); border-radius:12px; padding:10px; border:1px solid var(--border-color);">
+            <button onclick="toggleVideoEnCardio()" style="background:transparent; border:none; color:var(--text-main); font-weight:bold; width:100%; cursor:pointer; padding:10px; display:flex; justify-content:center; align-items:center; gap:8px; font-size:14px;">
+                ▶️ Ver vídeo mientras entrenas
+            </button>
+            <div id="videoCardioPanel" style="display:${videoEnCardioAbierto ? 'block' : 'none'}; margin-top:10px;">
+                ${videosGuardados.length === 0 ? '<p style="text-align:center; font-size:12px; color:var(--text-muted);">No tienes vídeos guardados en la pestaña "Vídeos".</p>' : `
+                <select id="selectVideoCardio" onchange="cambiarVideoCardio(this.value)" style="width:100%; padding:10px; border-radius:8px; margin-bottom:10px; background:var(--bg-card); color:var(--text-main); border:1px solid var(--border-color); outline:none; font-size:14px;">
+                    <option value="">Elige un vídeo de tu lista...</option>
+                    ${videosGuardados.map(v => `<option value="${v.id}" ${v.id === videoEnCardioActivo ? 'selected' : ''}>${escaparHTML(v.nombre)}</option>`).join('')}
+                </select>
+                <div id="iframeVideoCardio" style="display:${videoEnCardioActivo ? 'block' : 'none'}; border-radius:8px; overflow:hidden; aspect-ratio:16/9; width:100%; background:#000;">
+                    ${videoEnCardioActivo ? getIframeVideoCardio(videoEnCardioActivo) : ''}
+                </div>`}
+            </div>
+        </div>
+    `;
 
     contenido.innerHTML = `
         <h2>Cardio 🏃</h2>
@@ -1424,6 +1450,7 @@ function mostrarCorrer() {
             <div class="resumen-progreso">${cG}<div class="dato-resumen" style="grid-column:1/-1;"><strong id="correrKcal">0</strong><span>kcal</span></div></div>
             <div class="botones-correr">${b}</div>
             ${botonBloqueo}
+            ${panelVideo}
         </div>
         <h3 style="margin-top:20px;">Historial</h3>
         ${historialHTML}`;
@@ -1436,8 +1463,52 @@ function mostrarCorrer() {
     restaurarScroll();
 }
 
+function toggleVideoEnCardio() {
+    const panel = document.getElementById("videoCardioPanel");
+    const select = document.getElementById("selectVideoCardio");
+    
+    if (videoEnCardioAbierto) {
+        videoEnCardioAbierto = false;
+        panel.style.display = "none";
+    } else {
+        videoEnCardioAbierto = true;
+        panel.style.display = "block";
+        // Si había un vídeo seleccionado, lo cargamos de nuevo
+        if (select && select.value) {
+            videoEnCardioActivo = select.value;
+            cambiarVideoCardio(videoEnCardioActivo);
+        }
+    }
+}
+
+function cambiarVideoCardio(id) {
+    const div = document.getElementById("iframeVideoCardio");
+    if (!div) return;
+    videoEnCardioActivo = id;
+    
+    if (!id) {
+        div.style.display = "none";
+        div.innerHTML = "";
+        return;
+    }
+
+    div.style.display = "block";
+    div.innerHTML = getIframeVideoCardio(id);
+}
+
+function getIframeVideoCardio(id) {
+    const v = videosGuardados.find(x => x.id === id);
+    if (!v) return "";
+    const info = detectarTipoVideo(v.url);
+    if (info.tipo === "youtube") {
+        return `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${info.id}?autoplay=1" allow="autoplay; encrypted-media; fullscreen" allowfullscreen frameborder="0" style="border-radius:8px;"></iframe>`;
+    }
+    return "<p>Enlace no válido.</p>";
+}
+
 function bloquearPantallaCorrer() {
     pantallaBloqueada = true;
+  iniciarAudioSilencioso();
     // Pedimos al móvil que no apague la pantalla
     if ('wakeLock' in navigator) {
         navigator.wakeLock.request('screen').catch(err => console.log(err));
@@ -1482,6 +1553,7 @@ function bloquearPantallaCorrer() {
         btnDesc.innerText = "Sigue pulsando...";
         timeoutDesbloqueo = setTimeout(() => {
             pantallaBloqueada = false;
+          detenerAudioSilencioso();
             overlay.remove();
             clearInterval(intervalBloqueo);
             if ('wakeLock' in navigator && navigator.wakeLock.release) {
@@ -1501,6 +1573,39 @@ function bloquearPantallaCorrer() {
     btnDesc.addEventListener("mousedown", iniciarDesbloqueo);
     btnDesc.addEventListener("mouseup", cancelarDesbloqueo);
     btnDesc.addEventListener("mouseleave", cancelarDesbloqueo);
+}
+
+function iniciarAudioSilencioso() {
+    if (audioSilenciosoCtx) return;
+    try {
+        // Creamos un contexto de audio
+        audioSilenciosoCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioSilenciosoOsc = audioSilenciosoCtx.createOscillator();
+        const gainNode = audioSilenciosoCtx.createGain();
+        
+        // Ponemos el volumen a 0 (silencio absoluto)
+        gainNode.gain.value = 0;
+        
+        // Conectamos el oscilador al altavoz pasando por el volumen 0
+        audioSilenciosoOsc.connect(gainNode);
+        gainNode.connect(audioSilenciosoCtx.destination);
+        
+        audioSilenciosoOsc.start();
+    } catch (e) {
+        console.log("No se pudo iniciar el audio silencioso", e);
+    }
+}
+
+function detenerAudioSilencioso() {
+    if (audioSilenciosoCtx) {
+        if (audioSilenciosoOsc) {
+            audioSilenciosoOsc.stop();
+            audioSilenciosoOsc.disconnect();
+        }
+        audioSilenciosoCtx.close();
+        audioSilenciosoCtx = null;
+        audioSilenciosoOsc = null;
+    }
 }
 
 function toggleConfirmacionCarrera(id) {
@@ -1524,6 +1629,7 @@ function pausarCorrer() { if (correr.estado !== "corriendo") return; correr.acum
 function continuarCorrer() { if (correr.estado !== "pausado") return; correr.estado = "corriendo"; correr.inicio = Date.now(); correr.ultimaPos = null; iniciarGps(); iniciarTickCorrer(); mostrarCorrer(); }
 
 function terminarCorrer(evento) { 
+  detenerAudioSilencioso();
   pantallaBloqueada = false;
 const ov = document.getElementById("overlay-bloqueo");
 if (ov) ov.remove();
