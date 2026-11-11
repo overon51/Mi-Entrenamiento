@@ -6,6 +6,15 @@
   "background_color": "#0F172A",
   "theme_color": "#0F172A",
   "description": "Tu progreso empieza aquí",
+  "share_target": {
+    "action": "./share-handler",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "Icons/nuevoicon-192.png",
@@ -15,11 +24,6 @@
     {
       "src": "Icons/nuevoicon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "Icons/nuevoicon-1024.png",
-      "sizes": "1024x1024",
       "type": "image/png"
     }
   ]
