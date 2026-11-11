@@ -7,7 +7,7 @@
   "theme_color": "#0F172A",
   "description": "Tu progreso empieza aquí",
   "share_target": {
-    "action": "./share-handler",
+    "action": "./",
     "method": "GET",
     "params": {
       "title": "title",
