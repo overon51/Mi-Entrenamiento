@@ -2220,29 +2220,20 @@ function procesarEnlaceCompartido() {
     if (!match) return;
     const enlace = match[0];
 
-    // 1. YOUTUBE Y YOUTUBE MUSIC
     if (enlace.includes("youtube.com") || enlace.includes("youtu.be")) {
         urlCompartidaTemporal = enlace;
         mostrarMenuDestinoCompartido("youtube");
     } 
-    // 2. IVOOX
     else if (enlace.includes("ivoox.com")) {
-        confirmar("Has compartido un audio de iVoox. ¿Quieres guardarlo en tu lista de Podcasts?", () => { 
-            mostrarFormularioPodcast(); 
-            document.getElementById("podUrl").value = enlace;
-            document.getElementById("podNombre").value = "Podcast de iVoox"; 
-        });
+        urlCompartidaTemporal = enlace;
+        mostrarMenuDestinoCompartido("ivoox"); 
     }
-    // 3. ARCHIVOS .MP3 DIRECTOS
     else if (enlace.includes(".mp3")) {
         urlCompartidaTemporal = enlace;
         mostrarMenuDestinoCompartido("mp3");
     }
-    // 4. CUALQUIER OTRO ENLACE
     else {
-        confirmar("Has compartido un enlace. ¿Quieres abrirlo?", () => { 
-            abrirEnlace(enlace); 
-        });
+        confirmar("Has compartido un enlace. ¿Quieres abrirlo?", () => { abrirEnlace(enlace); });
     }
 }
 
@@ -2260,6 +2251,10 @@ function mostrarMenuDestinoCompartido(tipo) {
             <button onclick="elegirDestinoCompartido('musica')" style="background: var(--accent); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;">🎵 Guardar en Música</button>
             <button onclick="elegirDestinoCompartido('video')" style="background: #3B82F6; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px;">🎥 Guardar en Vídeos</button>
         `;
+    } else if (tipo === "ivoox") {
+        botones = `
+            <button onclick="elegirDestinoCompartido('podcast')" style="background: #E65100; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;">🎙 Guardar en Podcasts</button>
+        `;
     } else if (tipo === "mp3") {
         botones = `
             <button onclick="elegirDestinoCompartido('musica')" style="background: var(--accent); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;">🎵 Guardar en Música</button>
@@ -2271,27 +2266,33 @@ function mostrarMenuDestinoCompartido(tipo) {
         <div style="background: var(--bg-main); padding: 25px; border-radius: 12px; width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border-color);">
             <h3 style="color: var(--text-main); margin-top: 0; font-size: 18px;">¿Dónde quieres guardarlo?</h3>
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Has compartido un enlace a tu app.</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                ${botones}
+            <div style="display: flex; flex-direction: column; gap: 10px;">${botones}
                 <button onclick="document.getElementById('modal-destino-compartir').remove()" style="background: transparent; color: #EF4444; border: none; padding: 10px; margin-top: 10px; font-weight: bold; cursor: pointer;">Cancelar</button>
             </div>
-        </div>
-    `;
+        </div>`;
     document.body.appendChild(f);
 }
 
 function elegirDestinoCompartido(destino) {
     const modal = document.getElementById("modal-destino-compartir");
     if (modal) modal.remove();
-    
+
+    let nombreSugerido = "Compartido " + new Date().toLocaleDateString();
+    if (destino === 'musica') nombreSugerido = "Canción";
+    if (destino === 'video') nombreSugerido = "Vídeo";
+    if (destino === 'podcast') nombreSugerido = "Podcast";
+
+    const nombre = prompt("Ponle un nombre para saber qué es:", nombreSugerido);
+    if (nombre === null) return;
+    const nombreFinal = nombre.trim() || nombreSugerido;
+
     if (destino === 'musica') {
-        mostrarMenuSeleccionLista('musica', urlCompartidaTemporal);
+        mostrarMenuSeleccionLista('musica', urlCompartidaTemporal, nombreFinal);
     } 
     else if (destino === 'video') {
-        // Los vídeos se guardan directos en la lista general de Vídeos
         videosGuardados.push({ 
             id: "video_" + Date.now(), 
-            nombre: "Vídeo compartido " + new Date().toLocaleDateString(), 
+            nombre: nombreFinal, 
             url: urlCompartidaTemporal 
         });
         guardarDatos();
@@ -2299,11 +2300,11 @@ function elegirDestinoCompartido(destino) {
         mostrarVideos();
     } 
     else if (destino === 'podcast') {
-        mostrarMenuSeleccionLista('podcasts', urlCompartidaTemporal);
+        mostrarMenuSeleccionLista('podcasts', urlCompartidaTemporal, nombreFinal);
     }
 }
 
-function mostrarMenuSeleccionLista(cat, url) {
+function mostrarMenuSeleccionLista(cat, url, nombreGuardar) {
     const listas = listasMusica.filter(l => l.categoria === cat);
     const titulo = cat === 'musica' ? 'Música' : 'Podcasts';
     
@@ -2315,7 +2316,7 @@ function mostrarMenuSeleccionLista(cat, url) {
     f.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 999999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;";
 
     let botonesListas = listas.map(l => `
-        <button onclick="guardarEnListaCompartida('${l.id}', '${cat}', '${url}')" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <button onclick="guardarEnListaCompartida('${l.id}', '${cat}', '${url}', '${nombreGuardar.replace(/'/g, "\\'")}')" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
             <span>${escaparHTML(l.nombre)}</span>
             <span style="color: var(--accent);">➔</span>
         </button>
@@ -2327,82 +2328,41 @@ function mostrarMenuSeleccionLista(cat, url) {
 
     f.innerHTML = `
         <div style="background: var(--bg-main); padding: 20px; border-radius: 12px; width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border-color); max-height: 80vh; overflow-y: auto;">
-            <h3 style="color: var(--text-main); margin-top: 0; font-size: 18px;">Elige una lista de ${titulo}</h3>
-            <div style="display: flex; flex-direction: column; margin-top: 15px;">
-                ${botonesListas}
-            </div>
-            <button onclick="crearListaDesdeCompartir('${cat}', '${url}')" style="background: #3B82F6; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px;">+ Crear nueva lista</button>
+            <h3 style="color: var(--text-main); margin-top: 0; font-size: 18px;">¿En qué lista lo guardo?</h3>
+            <div style="display: flex; flex-direction: column; margin-top: 15px;">${botonesListas}</div>
+            <button onclick="crearListaDesdeCompartir('${cat}', '${url}', '${nombreGuardar.replace(/'/g, "\\'")}')" style="background: #3B82F6; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px;">+ Crear nueva lista</button>
             <button onclick="document.getElementById('modal-lista-compartir').remove()" style="background: transparent; color: #EF4444; border: none; padding: 10px; margin-top: 15px; font-weight: bold; cursor: pointer; width: 100%;">Cancelar</button>
-        </div>
-    `;
+        </div>`;
     document.body.appendChild(f);
 }
 
-function crearListaDesdeCompartir(cat, url) {
+function crearListaDesdeCompartir(cat, url, nombreGuardar) {
     document.getElementById("modal-lista-compartir").remove();
-    const nombre = prompt("Nombre de la nueva lista:");
-    if (!nombre || !nombre.trim()) return;
+    const nombreLista = prompt("Nombre de la nueva lista:");
+    if (!nombreLista || !nombreLista.trim()) return;
     
-    const nuevaLista = { id: "lista_" + Date.now(), nombre: nombre.trim(), categoria: cat };
+    const nuevaLista = { id: "lista_" + Date.now(), nombre: nombreLista.trim(), categoria: cat };
     listasMusica.push(nuevaLista);
     guardarDatos();
-    guardarEnListaCompartida(nuevaLista.id, cat, url);
+    guardarEnListaCompartida(nuevaLista.id, cat, url, nombreGuardar);
 }
 
-function guardarEnListaCompartida(idLista, cat, url) {
+function guardarEnListaCompartida(idLista, cat, url, nombre) {
     document.getElementById("modal-lista-compartir").remove();
     initAudioDB(() => {
         const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios");
         st.put({ 
             id: "audio_" + Date.now(), 
             listaId: idLista, 
-            nombre: "Compartido " + new Date().toLocaleDateString(), 
+            nombre: nombre, 
             url: url 
         });
         tx.oncomplete = () => {
-            aviso("✅ Añadido a la lista correctamente.");
-            mostrarMusica(cat); // Te lleva a la pantalla principal de Música/Podcasts
+            aviso("✅ Guardado correctamente.");
+            mostrarMusica(cat); 
         };
     });
 }
-
-function guardarMusicaCompartida(url) {
-    if (listasMusica.length === 0) {
-        alert("Primero crea una lista en la sección Música para poder guardar canciones.");
-        return;
-    }
-    const listasMusicaValidas = listasMusica.filter(l => l.categoria === "musica");
-    const nombres = listasMusicaValidas.map(l => l.nombre).join(", ");
-    
-    const listaNombre = prompt(`¿En qué lista de Música quieres guardarlo?\n\nListas disponibles: ${nombres}\n\nEscribe el nombre exacto:`);
-    if (!listaNombre) return;
-    
-    const lista = listasMusicaValidas.find(l => l.nombre.toLowerCase() === listaNombre.toLowerCase());
-    if (!lista) {
-        alert("No se encontró esa lista. Inténtalo de nuevo.");
-        return;
-    }
-    
-    initAudioDB(() => {
-        const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios");
-        st.put({ 
-            id: "audio_" + Date.now(), 
-            listaId: lista.id, 
-            nombre: "Compartido: " + new Date().toLocaleDateString(), 
-            url: url 
-        });
-        tx.oncomplete = () => {
-            aviso("✅ Canción añadida a la lista: " + lista.nombre);
-            mostrarMusica('musica');
-        };
-    });
-}
-
-let liveMap = null;
-let livePolyline = null;
-let liveMarker = null;
-
-
 
 function actualizarMapaEnVivo(lat, lon) {
     if (!liveMap || !livePolyline || !liveMarker) return;
@@ -2430,13 +2390,13 @@ function posicionCorrer(p) {
     actualizarVistaCorrer(); 
 }
 
-function verCarrera(id, origen) { 
+function verCarrera(id, origen) {
     guardarScroll();
     origenCarrera = origen || "correr";
-    const c = carreras.find(x => x.id === id); if (!c) return; 
+    const c = carreras.find(x => x.id === id); if (!c) return;
     const t = tiposCardio[tipoDe(c)];
     const km = (c.distancia || 0) / 1000;
-    
+
     contenido.innerHTML = `
         <button class="boton-texto" onclick="mostrarCorrer()" style="color:var(--accent); font-size:16px; margin-bottom:15px; font-weight:bold; padding:0;">◀ Volver</button>
         <div style="text-align:center; margin-bottom:20px;">
@@ -2462,8 +2422,7 @@ function verCarrera(id, origen) {
     `;
 
     if (t.gps && c.ruta && c.ruta.length > 1) {
-        setTimeout(() => { initSummaryMap(c.ruta); }, 100); 
+        setTimeout(() => { initSummaryMap(c.ruta); }, 100);
     }
     restaurarScroll();
-}
-
+       }
