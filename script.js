@@ -1765,7 +1765,24 @@ function mostrarMusica(pestanaActiva) {
             </div>`).join("");
     }
 
-    let botonExterno = esP ? '<button onclick="abrirEnlace(\'https://www.ivoox.com\')" style="background:#E65100; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir iVoox</button>' : '<button onclick="abrirEnlace(\'https://music.youtube.com\')" style="background:#EF4444; width: 70%; margin: 10px auto; display: block; padding: 6px 12px; font-size: 13px; border-radius: 20px; font-weight: normal; color: white;">▶ Abrir YouTube Music</button>';
+    let botonExterno = "";
+    
+    // TRUCO: Detectamos si es Android para usar el Intent y abrir la app nativa
+    const esAndroid = /Android/i.test(navigator.userAgent);
+
+    if (esP) {
+        // Intent para la app de iVoox
+        const urlIvoox = esAndroid 
+            ? "intent://www.ivoox.com#Intent;scheme=https;package=com.ivoox.app;end" 
+            : "https://www.ivoox.com";
+        botonExterno = `<button onclick="abrirEnlace('${urlIvoox}')" style="background:#E65100; width: 70%; margin: 10px auto; display: block; padding: 8px 12px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border:none; cursor:pointer;">▶ Abrir app iVoox</button>`;
+    } else {
+        // Intent para la app de YouTube Music
+        const urlYTM = esAndroid 
+            ? "intent://music.youtube.com#Intent;scheme=https;package=com.google.android.apps.youtube.music;end" 
+            : "https://music.youtube.com";
+        botonExterno = `<button onclick="abrirEnlace('${urlYTM}')" style="background:#EF4444; width: 70%; margin: 10px auto; display: block; padding: 8px 12px; font-size: 13px; border-radius: 20px; font-weight: bold; color: white; border:none; cursor:pointer;">▶ Abrir YouTube Music</button>`;
+    }
 
     contenido.innerHTML = `
         <h2>Música y Podcasts 🎵</h2>
