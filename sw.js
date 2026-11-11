@@ -1,4 +1,4 @@
-const CACHE_NAME = 'entrenamiento-A7'; // <-- Si actualizas, cambia este número
+const CACHE_NAME = 'entrenamiento-A8'; // <-- Si actualizas, cambia este número
 const ASSETS = [
     './',
     './index.html',
