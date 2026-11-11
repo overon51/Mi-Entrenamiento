@@ -22,7 +22,7 @@ let audioGlobal = null, floatingPlayer = null;
 let posicionScroll = 0;
 let audioSilenciosoCtx = null;
 let audioSilenciosoOsc = null;
-
+let urlCompartidaTemporal = "";
 function guardarScroll() { 
     posicionScroll = window.scrollY; 
 }
@@ -2211,20 +2211,121 @@ function importarDatos() {
 ===================================================== */
 function procesarEnlaceCompartido() {
     const params = new URLSearchParams(window.location.search);
-    const sharedText = params.get('text') || params.get('url') || "";
+    const sharedText = params.get('url') || params.get('text') || "";
+    
     if (!sharedText) return;
+    window.history.replaceState({}, document.title, window.location.pathname);
+
     const match = sharedText.match(/https?:\/\/[^\s]+/);
     if (!match) return;
     const enlace = match[0];
-    window.history.replaceState({}, document.title, window.location.pathname);
 
+    // 1. YOUTUBE Y YOUTUBE MUSIC
     if (enlace.includes("youtube.com") || enlace.includes("youtu.be")) {
-        confirmar("Has compartido un vídeo. ¿Quieres guardarlo?", () => { mostrarFormularioVideo(); document.getElementById("videoUrl").value = enlace; });
-    } else if (enlace.includes("ivoox.com") || enlace.includes(".mp3")) {
-        confirmar("Has compartido un audio. ¿Quieres guardarlo en Podcasts?", () => { mostrarFormularioPodcast(); document.getElementById("podUrl").value = enlace; });
-    } else {
-        confirmar("Has compartido un enlace. ¿Quieres abrirlo?", () => { abrirEnlace(enlace); });
+        urlCompartidaTemporal = enlace;
+        mostrarMenuDestinoCompartido("youtube");
+    } 
+    // 2. IVOOX
+    else if (enlace.includes("ivoox.com")) {
+        confirmar("Has compartido un audio de iVoox. ¿Quieres guardarlo en tu lista de Podcasts?", () => { 
+            mostrarFormularioPodcast(); 
+            document.getElementById("podUrl").value = enlace;
+            document.getElementById("podNombre").value = "Podcast de iVoox"; 
+        });
     }
+    // 3. ARCHIVOS .MP3 DIRECTOS
+    else if (enlace.includes(".mp3")) {
+        urlCompartidaTemporal = enlace;
+        mostrarMenuDestinoCompartido("mp3");
+    }
+    // 4. CUALQUIER OTRO ENLACE
+    else {
+        confirmar("Has compartido un enlace. ¿Quieres abrirlo?", () => { 
+            abrirEnlace(enlace); 
+        });
+    }
+}
+
+function mostrarMenuDestinoCompartido(tipo) {
+    const anterior = document.getElementById("modal-destino-compartir");
+    if (anterior) anterior.remove();
+
+    const f = document.createElement("div");
+    f.id = "modal-destino-compartir";
+    f.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 999999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;";
+    
+    let botones = "";
+    if (tipo === "youtube") {
+        botones = `
+            <button onclick="elegirDestinoCompartido('musica')" style="background: var(--accent); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;">🎵 Guardar en Música</button>
+            <button onclick="elegirDestinoCompartido('video')" style="background: #3B82F6; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px;">🎥 Guardar en Vídeos</button>
+        `;
+    } else if (tipo === "mp3") {
+        botones = `
+            <button onclick="elegirDestinoCompartido('musica')" style="background: var(--accent); color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;">🎵 Guardar en Música</button>
+            <button onclick="elegirDestinoCompartido('podcast')" style="background: #E65100; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px;">🎙 Guardar en Podcasts</button>
+        `;
+    }
+
+    f.innerHTML = `
+        <div style="background: var(--bg-main); padding: 25px; border-radius: 12px; width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border-color);">
+            <h3 style="color: var(--text-main); margin-top: 0; font-size: 18px;">¿Dónde quieres guardarlo?</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Has compartido un enlace a tu app.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                ${botones}
+                <button onclick="document.getElementById('modal-destino-compartir').remove()" style="background: transparent; color: #EF4444; border: none; padding: 10px; margin-top: 10px; font-weight: bold; cursor: pointer;">Cancelar</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(f);
+}
+
+function elegirDestinoCompartido(destino) {
+    document.getElementById("modal-destino-compartir").remove();
+    
+    if (destino === 'musica') {
+        guardarMusicaCompartida(urlCompartidaTemporal);
+    } else if (destino === 'video') {
+        mostrarFormularioVideo(); 
+        document.getElementById("videoUrl").value = urlCompartidaTemporal;
+        document.getElementById("videoNombre").value = "Vídeo de YouTube";
+    } else if (destino === 'podcast') {
+        mostrarFormularioPodcast(); 
+        document.getElementById("podUrl").value = urlCompartidaTemporal;
+        document.getElementById("podNombre").value = "Audio MP3"; 
+    }
+}
+
+function guardarMusicaCompartida(url) {
+    if (listasMusica.length === 0) {
+        alert("Primero crea una lista en la sección Música para poder guardar canciones.");
+        return;
+    }
+    const listasMusicaValidas = listasMusica.filter(l => l.categoria === "musica");
+    const nombres = listasMusicaValidas.map(l => l.nombre).join(", ");
+    
+    const listaNombre = prompt(`¿En qué lista de Música quieres guardarlo?\n\nListas disponibles: ${nombres}\n\nEscribe el nombre exacto:`);
+    if (!listaNombre) return;
+    
+    const lista = listasMusicaValidas.find(l => l.nombre.toLowerCase() === listaNombre.toLowerCase());
+    if (!lista) {
+        alert("No se encontró esa lista. Inténtalo de nuevo.");
+        return;
+    }
+    
+    initAudioDB(() => {
+        const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios");
+        st.put({ 
+            id: "audio_" + Date.now(), 
+            listaId: lista.id, 
+            nombre: "Compartido: " + new Date().toLocaleDateString(), 
+            url: url 
+        });
+        tx.oncomplete = () => {
+            aviso("✅ Canción añadida a la lista: " + lista.nombre);
+            mostrarMusica('musica');
+        };
+    });
 }
 
 let liveMap = null;
