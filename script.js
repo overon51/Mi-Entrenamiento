@@ -2281,19 +2281,89 @@ function mostrarMenuDestinoCompartido(tipo) {
 }
 
 function elegirDestinoCompartido(destino) {
-    document.getElementById("modal-destino-compartir").remove();
+    const modal = document.getElementById("modal-destino-compartir");
+    if (modal) modal.remove();
     
     if (destino === 'musica') {
-        guardarMusicaCompartida(urlCompartidaTemporal);
-    } else if (destino === 'video') {
-        mostrarFormularioVideo(); 
-        document.getElementById("videoUrl").value = urlCompartidaTemporal;
-        document.getElementById("videoNombre").value = "Vídeo de YouTube";
-    } else if (destino === 'podcast') {
-        mostrarFormularioPodcast(); 
-        document.getElementById("podUrl").value = urlCompartidaTemporal;
-        document.getElementById("podNombre").value = "Audio MP3"; 
+        mostrarMenuSeleccionLista('musica', urlCompartidaTemporal);
+    } 
+    else if (destino === 'video') {
+        // Los vídeos se guardan directos en la lista general de Vídeos
+        videosGuardados.push({ 
+            id: "video_" + Date.now(), 
+            nombre: "Vídeo compartido " + new Date().toLocaleDateString(), 
+            url: urlCompartidaTemporal 
+        });
+        guardarDatos();
+        aviso("✅ Vídeo guardado en tu lista.");
+        mostrarVideos();
+    } 
+    else if (destino === 'podcast') {
+        mostrarMenuSeleccionLista('podcasts', urlCompartidaTemporal);
     }
+}
+
+function mostrarMenuSeleccionLista(cat, url) {
+    const listas = listasMusica.filter(l => l.categoria === cat);
+    const titulo = cat === 'musica' ? 'Música' : 'Podcasts';
+    
+    const anterior = document.getElementById("modal-lista-compartir");
+    if (anterior) anterior.remove();
+
+    const f = document.createElement("div");
+    f.id = "modal-lista-compartir";
+    f.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 999999; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;";
+
+    let botonesListas = listas.map(l => `
+        <button onclick="guardarEnListaCompartida('${l.id}', '${cat}', '${url}')" style="background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span>${escaparHTML(l.nombre)}</span>
+            <span style="color: var(--accent);">➔</span>
+        </button>
+    `).join("");
+
+    if (listas.length === 0) {
+        botonesListas = `<p style="color: var(--text-muted); text-align: center; margin-bottom: 20px; font-size: 14px;">Aún no tienes listas de ${titulo}.</p>`;
+    }
+
+    f.innerHTML = `
+        <div style="background: var(--bg-main); padding: 20px; border-radius: 12px; width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border-color); max-height: 80vh; overflow-y: auto;">
+            <h3 style="color: var(--text-main); margin-top: 0; font-size: 18px;">Elige una lista de ${titulo}</h3>
+            <div style="display: flex; flex-direction: column; margin-top: 15px;">
+                ${botonesListas}
+            </div>
+            <button onclick="crearListaDesdeCompartir('${cat}', '${url}')" style="background: #3B82F6; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px;">+ Crear nueva lista</button>
+            <button onclick="document.getElementById('modal-lista-compartir').remove()" style="background: transparent; color: #EF4444; border: none; padding: 10px; margin-top: 15px; font-weight: bold; cursor: pointer; width: 100%;">Cancelar</button>
+        </div>
+    `;
+    document.body.appendChild(f);
+}
+
+function crearListaDesdeCompartir(cat, url) {
+    document.getElementById("modal-lista-compartir").remove();
+    const nombre = prompt("Nombre de la nueva lista:");
+    if (!nombre || !nombre.trim()) return;
+    
+    const nuevaLista = { id: "lista_" + Date.now(), nombre: nombre.trim(), categoria: cat };
+    listasMusica.push(nuevaLista);
+    guardarDatos();
+    guardarEnListaCompartida(nuevaLista.id, cat, url);
+}
+
+function guardarEnListaCompartida(idLista, cat, url) {
+    document.getElementById("modal-lista-compartir").remove();
+    initAudioDB(() => {
+        const tx = dbAudio.transaction("audios", "readwrite"), st = tx.objectStore("audios");
+        st.put({ 
+            id: "audio_" + Date.now(), 
+            listaId: idLista, 
+            nombre: "Compartido " + new Date().toLocaleDateString(), 
+            url: url 
+        });
+        tx.oncomplete = () => {
+            aviso("✅ Añadido a la lista correctamente.");
+            mostrarMusica(cat); // Te lleva a la pantalla principal de Música/Podcasts
+        };
+    });
 }
 
 function guardarMusicaCompartida(url) {
