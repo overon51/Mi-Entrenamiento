@@ -1,51 +1,68 @@
-const CACHE_NAME = 'entrenamiento-A6'; // <--- Cambia este número cada vez que subas algo
-const ARCHIVOS = [
+const CACHE_NAME = 'entrenamiento-A7'; // <-- Si actualizas, cambia este número
+const ASSETS = [
     './',
     './index.html',
-    './style.css',
     './script.js',
-    './manifest.json'
+    './style.css',
+    './manifest.json',
+    './Icons/nuevoicon-192.png',
+    './Icons/nuevoicon-512.png'
 ];
 
-// Al instalar, guarda los archivos pero NO toma el control
-self.addEventListener('install', function(e) {
+// Instalar
+self.addEventListener('install', (e) => {
     e.waitUntil(
-        caches.open(CACHE_NAME).then(function(cache) {
-            return cache.addAll(ARCHIVOS);
-        })
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll(ASSETS);
+        }).then(() => self.skipWaiting())
     );
 });
 
-// Al activar, borra las cachés viejas
-self.addEventListener('activate', function(e) {
+// Activar
+self.addEventListener('activate', (e) => {
     e.waitUntil(
-        caches.keys().then(function(claves) {
+        caches.keys().then((keys) => {
             return Promise.all(
-                claves.filter(function(k) { return k !== CACHE_NAME; })
-                      .map(function(k) { return caches.delete(k); })
+                keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
             );
+        }).then(() => self.clients.claim())
+    );
+});
+
+// Fetch
+self.addEventListener('fetch', (e) => {
+    if (e.request.method !== 'GET') return;
+
+    // SI ES UNA NAVEGACIÓN (Abrir la app o compartir un enlace):
+    // Le decimos que vaya a internet. Si falla (o es una URL con ?url=...), cargará el index.html
+    if (e.request.mode === 'navigate') {
+        e.respondWith(
+            fetch(e.request).catch(() => {
+                return caches.match('./index.html');
+            })
+        );
+        return;
+    }
+
+    // Para el resto de cosas (CSS, JS, fotos), usa la caché primero
+    e.respondWith(
+        caches.match(e.request).then((response) => {
+            return response || fetch(e.request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(e.request, responseClone);
+                    });
+                }
+                return networkResponse;
+            }).catch(() => {
+                return caches.match('./index.html');
+            });
         })
     );
 });
 
-self.addEventListener('fetch', function(e) {
-    if (e.request.method !== 'GET') return;
-    const url = new URL(e.request.url);
-    const esApp = url.origin === location.origin;
-    const esDinamico = /\.(html|js|css|json)$/i.test(url.pathname) || url.pathname.endsWith('/');
-
-    if (esApp && esDinamico) {
-        e.respondWith(fetch(e.request).then(function(res) {
-            const copia = res.clone();
-            caches.open(CACHE_NAME).then(function(c) { c.put(e.request, copia); });
-            return res;
-        }).catch(function() { return caches.match(e.request); }));
-    } else {
-        e.respondWith(caches.match(e.request).then(function(res) { return res || fetch(e.request); }));
-    }
-});
-
-// Escucha cuando le damos al botón de actualizar
-self.addEventListener('message', function(e) {
+// Escuchar cuando le damos al botón de actualizar
+self.addEventListener('message', (e) => {
     if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });
